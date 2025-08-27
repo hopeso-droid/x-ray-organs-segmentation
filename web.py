@@ -30,22 +30,6 @@ def load_default_image():
     加载适合细胞组织分割系统的默认图片
     """
     try:
-        # 优先使用细胞图像作为默认图片
-        cell_image_path = abs_path("icon/cell_ini_image.jpg", path_type="current")
-        if os.path.exists(cell_image_path):
-            return Image.open(cell_image_path)
-    except Exception as e:
-        print(f"Failed to load cell_ini_image.jpg: {e}")
-    
-    try:
-        # 备选方案：使用其他现有图片
-        ini_image_path = abs_path("icon/ini-image.png", path_type="current")
-        if os.path.exists(ini_image_path):
-            return Image.open(ini_image_path)
-    except Exception as e:
-        print(f"Failed to load ini-image.png: {e}")
-    
-    try:
         # 如果都不可用，创建一个自定义的默认图片
         width, height = 600, 400
         
