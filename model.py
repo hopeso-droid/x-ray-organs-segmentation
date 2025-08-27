@@ -8,13 +8,24 @@ except ImportError:
     # 创建简单的基类替代
     class Detector:
         """简单的检测器基类"""
-        def __init__(self):
-            pass
+        def __init__(self, params=None):
+            """初始化检测器
+            
+            Args:
+                params: 检测器参数，可以为None
+            """
+            self.params = params or {}
+            self.imgsz = 640  # 默认图像尺寸
     
     class HeatmapGenerator:
         """简单的热图生成器基类"""
-        def __init__(self):
-            pass
+        def __init__(self, params=None):
+            """初始化热图生成器
+            
+            Args:
+                params: 生成器参数，可以为None
+            """
+            self.params = params or {}
 from chinese_name_list import Chinese_name  # 从datasets库中导入Chinese_name字典，用于获取类别的中文名称
 from ultralytics import YOLO  # 从ultralytics库中导入YOLO类，用于加载YOLO模型
 from ultralytics.utils.torch_utils import select_device  # 从ultralytics库中导入select_device函数，用于选择设备
