@@ -1,0 +1,71 @@
+# Python 相关
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 训练相关大文件
+runs/
+datasets/
+
+# 大型模型权重文件 (GitHub限制100MB)
+weights/yolov8l-seg.pt
+*.cache
+
+# 排除庞大的 ultralytics 源码目录 (pip安装即可)
+ultralytics/
+
+# 开发测试文件
+demo_test_*.py
+train_*.py
+
+# 保留必要文件说明：
+# tempDir/best.pt (17MB - 自定义训练模型)
+# yolo11n*.pt (小模型文件)
+# yolo11s*.pt (中等模型文件)
+
+# 日志和临时文件
+*.log
+logs/
+tempDir/*.csv
+tempDir/*.txt
+
+# 操作系统文件
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE 配置
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 临时文件
+tmp/
+temp/
+*.tmp
+
+# 用户上传文件
+uploads/

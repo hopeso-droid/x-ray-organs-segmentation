@@ -1,0 +1,36 @@
+[global]
+developmentMode = false
+
+[server]
+# 服务器配置
+headless = true
+port = 8501
+enableCORS = false
+enableXsrfProtection = false
+
+# 文件上传限制
+maxUploadSize = 200
+maxMessageSize = 200
+
+[browser]
+# 浏览器配置
+gatherUsageStats = false
+serverAddress = "0.0.0.0"
+
+[theme]
+# 主题配置
+primaryColor = "#2e7d32"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f0f2f6"
+textColor = "#262730"
+
+[runner]
+# 运行器配置
+magicEnabled = true
+installTracer = false
+fixMatplotlib = true
+
+[deprecation]
+# 禁用弃用警告
+showfileUploaderEncoding = false
+showPyplotGlobalUse = false
