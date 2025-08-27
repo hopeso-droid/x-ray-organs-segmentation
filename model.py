@@ -30,6 +30,17 @@ from chinese_name_list import Chinese_name  # 从datasets库中导入Chinese_nam
 from ultralytics import YOLO  # 从ultralytics库中导入YOLO类，用于加载YOLO模型
 from ultralytics.utils.torch_utils import select_device  # 从ultralytics库中导入select_device函数，用于选择设备
 import os
+
+# 导入云端日志器
+try:
+    from cloud_utils import cloud_logger
+except ImportError:
+    # 如果导入失败，创建一个简单的日志替代
+    class SimpleLogger:
+        def info(self, msg): print(f"INFO: {msg}")
+        def error(self, msg): print(f"ERROR: {msg}")
+        def warning(self, msg): print(f"WARNING: {msg}")
+    cloud_logger = SimpleLogger()
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
 ini_params = {
@@ -70,17 +81,46 @@ class Web_Detector(Detector):  # 定义YOLOv8Detector类，继承自Detector类
         self.imgsz = 640  # 设置默认图像尺寸，用于模型预热
 
     def load_model(self, model_path):  # 定义加载模型的方法
-        self.device = select_device(self.params['device'])  # 选择设备
-        # print(os.path.basename(model_path)[:3])
-        if os.path.basename(model_path)[:3] == 'seg':
-            task = 'segment'
-        else:
-            task = 'segment'
-        self.model = YOLO(model_path, task=task)
-        names_dict = self.model.names  # 获取类别名称字典
-        self.names = [Chinese_name[v] if v in Chinese_name else v for v in names_dict.values()]  # 将类别名称转换为中文
-        self.model(torch.zeros(1, 3, *[self.imgsz] * 2).to(self.device).
-                   type_as(next(self.model.model.parameters())))  # 预热
+        try:
+            cloud_logger.info(f"开始加载模型: {model_path}")
+            self.device = select_device(self.params['device'])  # 选择设备
+            cloud_logger.info(f"选择设备: {self.device}")
+            
+            # 确定任务类型
+            if os.path.basename(model_path)[:3] == 'seg' or 'seg' in model_path.lower():
+                task = 'segment'
+            else:
+                task = 'segment'  # 默认使用分割任务
+            
+            cloud_logger.info(f"加载YOLO模型，任务类型: {task}")
+            self.model = YOLO(model_path, task=task)
+            
+            cloud_logger.info("获取类别名称")
+            names_dict = self.model.names  # 获取类别名称字典
+            self.names = [Chinese_name[v] if v in Chinese_name else v for v in names_dict.values()]  # 将类别名称转换为中文
+            cloud_logger.info(f"模型类别数量: {len(self.names)}")
+            
+            # 安全的模型预热
+            try:
+                cloud_logger.info("开始模型预热")
+                dummy_input = torch.zeros(1, 3, self.imgsz, self.imgsz)
+                if self.device.type != 'cpu':
+                    dummy_input = dummy_input.to(self.device)
+                    dummy_input = dummy_input.type_as(next(self.model.model.parameters()))
+                
+                with torch.no_grad():
+                    _ = self.model(dummy_input, verbose=False)
+                cloud_logger.info("模型预热完成")
+            except Exception as e:
+                cloud_logger.warning(f"模型预热失败，但可以继续使用: {e}")
+            
+            cloud_logger.info("✅ 模型加载成功")
+            
+        except Exception as e:
+            cloud_logger.error(f"❌ 模型加载失败: {e}")
+            import traceback
+            traceback.print_exc()
+            raise e
         
     def preprocess(self, img):  # 定义预处理方法
         self.img = img  # 保存原始图像

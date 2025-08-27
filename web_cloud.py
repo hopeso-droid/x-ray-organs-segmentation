@@ -448,12 +448,47 @@ class Detection_UI_Cloud:
             help="检测模式：标记细胞位置；分割模式：精确描绘细胞边界"
         )
 
-        # 模型文件选择（云端简化版）
+        # 模型状态显示
         st.sidebar.markdown("**模型状态**")
-        if hasattr(self, 'model') and self.model is not None:
-            st.sidebar.success("✅ AI模型已就绪")
+        
+        # 显示当前模型状态
+        model_loaded = st.session_state.get('model_loaded', False)
+        model_path = st.session_state.get('model_path', '未知')
+        
+        if model_loaded:
+            st.sidebar.success(f"✅ AI模型已就绪")
+            st.sidebar.info(f"模型文件: {os.path.basename(model_path)}")
         else:
             st.sidebar.error("❌ AI模型未加载")
+        
+        # 检查模型对象状态
+        if hasattr(self, 'model') and self.model is not None:
+            if hasattr(self.model, 'model') and self.model.model is not None:
+                st.sidebar.success("✅ 模型对象正常")
+                # 显示模型设备信息
+                if hasattr(self.model, 'device'):
+                    st.sidebar.text(f"运行设备: {self.model.device}")
+            else:
+                st.sidebar.warning("⚠️ 模型对象异常")
+        else:
+            st.sidebar.error("❌ 模型对象未创建")
+        
+        # 重新加载模型按钮
+        if st.sidebar.button("🔄 重新加载模型", help="强制重新加载AI模型"):
+            with st.sidebar:
+                with st.spinner("正在重新加载模型..."):
+                    try:
+                        # 重置状态
+                        st.session_state['model_loaded'] = False
+                        st.session_state['model_path'] = ''
+                        
+                        # 重新加载模型
+                        self.load_model_weights()
+                        st.sidebar.success("模型重新加载完成！")
+                        st.rerun()
+                    except Exception as e:
+                        st.sidebar.error(f"重新加载失败: {e}")
+                        cloud_logger.error(f"手动重新加载模型失败: {e}")
 
         st.sidebar.markdown("---")
 
