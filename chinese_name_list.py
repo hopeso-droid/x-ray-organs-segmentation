@@ -1,33 +1,45 @@
 # -*- coding: utf-8 -*-
 
-# 中文到英文的映射，用于图像显示（解决字体显示问题）
+# 根据data.yaml中的血细胞类别定义中英文映射
 Chinese_name = {
-    'nucleus': "细胞核",
-    'cytoplasm': "细胞质",
-    'tissue': "组织结构",
-    'vessel': "血管",
-    'cell': "细胞",
-    'membrane': "细胞膜"
+    'Basophil': "嗜碱性粒细胞",
+    'Eosinophil': "嗜酸性粒细胞", 
+    'Erythroblast': "幼红细胞",
+    'Intrusion': "侵入物",
+    'Lymphocyte': "淋巴细胞",
+    'Monocyte': "单核细胞",
+    'Myelocyte': "髓细胞",
+    'Neutrophil': "中性粒细胞",
+    'Platelet': "血小板",
+    'RBC': "红细胞"
 }
 
 # 英文标签，用于图像上的文字显示
 English_labels = {
-    'nucleus': "Nucleus",
-    'cytoplasm': "Cytoplasm",
-    'tissue': "Tissue", 
-    'vessel': "Vessel",
-    'cell': "Cell",
-    'membrane': "Membrane"
+    'Basophil': "Basophil",
+    'Eosinophil': "Eosinophil",
+    'Erythroblast': "Erythroblast", 
+    'Intrusion': "Intrusion",
+    'Lymphocyte': "Lymphocyte",
+    'Monocyte': "Monocyte",
+    'Myelocyte': "Myelocyte",
+    'Neutrophil': "Neutrophil",
+    'Platelet': "Platelet",
+    'RBC': "RBC"
 }
 
 # 中文到英文的映射
 Chinese_to_English = {
-    "细胞核": "Nucleus",
-    "细胞质": "Cytoplasm",
-    "组织结构": "Tissue",
-    "血管": "Vessel",
-    "细胞": "Cell",
-    "细胞膜": "Membrane"
+    "嗜碱性粒细胞": "Basophil",
+    "嗜酸性粒细胞": "Eosinophil",
+    "幼红细胞": "Erythroblast",
+    "侵入物": "Intrusion",
+    "淋巴细胞": "Lymphocyte",
+    "单核细胞": "Monocyte",
+    "髓细胞": "Myelocyte",
+    "中性粒细胞": "Neutrophil",
+    "血小板": "Platelet",
+    "红细胞": "RBC"
 }
 
 Label_list = list(Chinese_name.values())

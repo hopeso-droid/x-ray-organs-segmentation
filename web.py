@@ -371,7 +371,7 @@ class Detection_UI:
                        range(len(self.cls_name))]
 
         # 设置页面标题
-        self.title = "AI细胞组织分割系统 - Cell Tissue Segmentation System"
+        self.title = "AI血细胞分析系统 - Blood Cell Analysis System"
         self.setup_page()  # 初始化页面布局
         def_css_hitml()  # 应用 CSS 样式
 
@@ -504,10 +504,10 @@ class Detection_UI:
             st.markdown(
                 """
                 <div style="background-color: #fff8e1; border: 1px solid #ffcc02; border-radius: 5px; padding: 15px; margin-bottom: 15px;">
-                    <h4 style="color: #ff6f00; margin-top: 0;">⚠️ 科研使用声明</h4>
+                    <h4 style="color: #ff6f00; margin-top: 0;">⚠️ 系统使用声明</h4>
                     <ul style="margin-bottom: 0; color: #ff6f00;">
                         <li>本系统仅供生物医学研究和教学使用</li>
-                        <li>不可用于临床诊断或医疗决策</li>
+                        <li>仅为辅助用于临床诊断或医疗决策</li>
                         <li>分析结果需要专业研究人员验证</li>
                         <li>细胞组织分割结果仅供科研参考</li>
                         <li>使用前请确保数据合规性</li>
@@ -526,7 +526,7 @@ class Detection_UI:
                         <li><strong>分析类型：</strong>细胞组织智能分割</li>
                         <li><strong>支持格式：</strong>JPG, PNG, JPEG, TIFF</li>
                         <li><strong>最佳图像：</strong>高分辨率显微镜图像</li>
-                        <li><strong>分析指标：</strong>细胞边界、组织结构、形态特征</li>
+                        <li><strong>分析指标：</strong>细胞名称、细胞面积、细胞周长、细胞圆度、细胞色彩值</li>
                         <li><strong>置信度：</strong>建议设置0.3-0.7之间</li>
                     </ul>
                 </div>
@@ -1089,74 +1089,64 @@ class Detection_UI:
 
     def generate_analysis_assessment_content(self):
         """
-        生成分析评估汇总内容
+        生成血细胞分析评估汇总内容
         """
         if not hasattr(self, 'logTable') or len(self.logTable.saved_results) == 0:
-            return "📊 暂无分析数据进行评估", "", [], {}
+            return "📊 暂无血细胞分析数据", "", [], {}
         
-        # 统计不同类型的检测结果
+        # 统计血细胞各类型的检测结果
         analysis_stats = {
-            "细胞核": 0,
-            "细胞质": 0,
-            "组织结构": 0,
-            "血管": 0,
-            "其他结构": 0,
-            "总分析数": len(self.logTable.saved_results)
+            "嗜碱性粒细胞": 0,
+            "嗜酸性粒细胞": 0,
+            "幼红细胞": 0,
+            "侵入物": 0,
+            "淋巴细胞": 0,
+            "单核细胞": 0,
+            "髓细胞": 0,
+            "中性粒细胞": 0,
+            "血小板": 0,
+            "红细胞": 0,
+            "总检测数": len(self.logTable.saved_results)
         }
-        
-        nucleus_cases = []
-        cytoplasm_cases = []
-        tissue_cases = []
-        vessel_cases = []
         
         for result in self.logTable.saved_results:
             if len(result) >= 1:
                 # 结果结构：[name, bbox, biological_description, time, cls_id]
-                class_name = result[0] if len(result) > 0 else "未知"  # 第一个元素是类别名称
-                if "细胞核" in str(class_name):
-                    analysis_stats["细胞核"] += 1
-                    nucleus_cases.append(result)
-                elif "细胞质" in str(class_name):
-                    analysis_stats["细胞质"] += 1
-                    cytoplasm_cases.append(result)
-                elif "组织结构" in str(class_name) or "组织" in str(class_name):
-                    analysis_stats["组织结构"] += 1
-                    tissue_cases.append(result)
-                elif "血管" in str(class_name):
-                    analysis_stats["血管"] += 1
-                    vessel_cases.append(result)
-                else:
-                    analysis_stats["其他结构"] += 1
+                class_name = result[0] if len(result) > 0 else "未知"
+                # 使用中文名称进行统计
+                if str(class_name) in analysis_stats:
+                    analysis_stats[str(class_name)] += 1
         
-        # 计算分析质量等级
-        total_structures = analysis_stats["细胞核"] + analysis_stats["细胞质"] + analysis_stats["组织结构"] + analysis_stats["血管"]
+        # 计算血细胞分布质量等级
+        total_cells = sum([analysis_stats[key] for key in analysis_stats if key != "总检测数"])
+        cell_types_found = len([key for key in analysis_stats if analysis_stats[key] > 0 and key != "总检测数"])
         
-        if total_structures >= 10:
-            quality_level = "🟢 高质量"
+        if total_cells >= 20 and cell_types_found >= 5:
+            quality_level = "🟢 优秀血涂片"
             quality_color = "#2ed573"
             recommendations = [
-                "图像质量优秀，结构识别完整",
-                "细胞和组织特征清晰可见",
-                "适合进行详细形态学分析",
-                "建议保存为高质量样本"
+                f"检测到{cell_types_found}种血细胞类型，样本多样性好",
+                f"总计{total_cells}个细胞，数量充足适合分析",
+                "血细胞形态清晰，适合血液学研究",
+                "建议保存为高质量血液样本"
             ]
-        elif total_structures >= 5:
-            quality_level = "🟡 中等质量"
+        elif total_cells >= 10 and cell_types_found >= 3:
+            quality_level = "🟡 良好血涂片"
             quality_color = "#ffa726"
             recommendations = [
-                "图像质量良好，主要结构可识别",
-                "建议优化染色或成像条件",
-                "可进行基本形态学观察",
+                f"检测到{cell_types_found}种血细胞类型",
+                f"总计{total_cells}个细胞，基本满足分析要求",
+                "可进行基本血液学观察",
                 "适合教学演示使用"
             ]
         else:
             quality_level = "🔴 需要改进"
             quality_color = "#ff4757"
             recommendations = [
-                "检测到的结构较少，图像质量有待提高",
-                "建议检查样本制备过程",
-                "优化显微镜成像参数",
-                "考虑重新获取图像"
+                f"仅检测到{cell_types_found}种血细胞类型，样本单一",
+                f"总计{total_cells}个细胞，数量偏少",
+                "建议优化血涂片制备技术",
+                "考虑重新采样或调整成像参数"
             ]
         
         return quality_level, quality_color, recommendations, analysis_stats
@@ -1177,16 +1167,22 @@ class Detection_UI:
         
         # 使用占位符更新内容
         with self.analysis_assessment_placeholder.container():
-            # 显示分析评估结果
+            # 显示血细胞分析评估结果
             st.markdown(
                 f"""
                 <div style="background-color: #f8f9fa; border-left: 4px solid {quality_color}; padding: 15px; border-radius: 5px;">
-                    <h5 style="color: {quality_color}; margin-top: 0;">分析质量：{quality_level}</h5>
-                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap;">
-                        <span><strong>细胞核：</strong>{analysis_stats['细胞核']}个</span>
-                        <span><strong>细胞质：</strong>{analysis_stats['细胞质']}个</span>
-                        <span><strong>组织：</strong>{analysis_stats['组织结构']}个</span>
-                        <span><strong>血管：</strong>{analysis_stats['血管']}个</span>
+                    <h5 style="color: {quality_color}; margin-top: 0;">血液分析质量：{quality_level}</h5>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 10px;">
+                        <span><strong>中性粒细胞：</strong>{analysis_stats['中性粒细胞']}</span>
+                        <span><strong>淋巴细胞：</strong>{analysis_stats['淋巴细胞']}</span>
+                        <span><strong>单核细胞：</strong>{analysis_stats['单核细胞']}</span>
+                        <span><strong>嗜酸性粒细胞：</strong>{analysis_stats['嗜酸性粒细胞']}</span>
+                        <span><strong>嗜碱性粒细胞：</strong>{analysis_stats['嗜碱性粒细胞']}</span>
+                        <span><strong>红细胞：</strong>{analysis_stats['红细胞']}</span>
+                        <span><strong>血小板：</strong>{analysis_stats['血小板']}</span>
+                        <span><strong>幼红细胞：</strong>{analysis_stats['幼红细胞']}</span>
+                        <span><strong>髓细胞：</strong>{analysis_stats['髓细胞']}</span>
+                        <span><strong>侵入物：</strong>{analysis_stats['侵入物']}</span>
                     </div>
                 </div>
                 """,
@@ -1194,25 +1190,29 @@ class Detection_UI:
             )
             
             # 显示分析建议
-            st.markdown("**🔬 分析建议：**")
+            st.markdown("**🩸 血液学分析建议：**")
             for i, rec in enumerate(recommendations, 1):
                 st.markdown(f"{i}. {rec}")
                 
-            # 显示统计图表
-            if analysis_stats["总分析数"] > 0:
-                col1, col2, col3, col4 = st.columns(4)
+            # 显示主要血细胞类型的统计图表
+            if analysis_stats["总检测数"] > 0:
+                col1, col2, col3, col4, col5 = st.columns(5)
+                total = analysis_stats["总检测数"]
                 with col1:
-                    st.metric("细胞核", analysis_stats["细胞核"], 
-                             delta=f"{analysis_stats['细胞核']/analysis_stats['总分析数']*100:.1f}%")
+                    st.metric("中性粒细胞", analysis_stats["中性粒细胞"], 
+                             delta=f"{analysis_stats['中性粒细胞']/total*100:.1f}%")
                 with col2:
-                    st.metric("细胞质", analysis_stats["细胞质"],
-                             delta=f"{analysis_stats['细胞质']/analysis_stats['总分析数']*100:.1f}%")
+                    st.metric("淋巴细胞", analysis_stats["淋巴细胞"],
+                             delta=f"{analysis_stats['淋巴细胞']/total*100:.1f}%")
                 with col3:
-                    st.metric("组织结构", analysis_stats["组织结构"],
-                             delta=f"{analysis_stats['组织结构']/analysis_stats['总分析数']*100:.1f}%")
+                    st.metric("单核细胞", analysis_stats["单核细胞"],
+                             delta=f"{analysis_stats['单核细胞']/total*100:.1f}%")
                 with col4:
-                    st.metric("血管", analysis_stats["血管"],
-                             delta=f"{analysis_stats['血管']/analysis_stats['总分析数']*100:.1f}%")
+                    st.metric("红细胞", analysis_stats["红细胞"],
+                             delta=f"{analysis_stats['红细胞']/total*100:.1f}%")
+                with col5:
+                    st.metric("血小板", analysis_stats["血小板"],
+                             delta=f"{analysis_stats['血小板']/total*100:.1f}%")
 
     def frame_table_process(self, frame, caption):
         # 显示画面并更新结果
@@ -1238,7 +1238,7 @@ class Detection_UI:
             <div style="text-align: center; color: #666; margin: 20px 0;">
                 <hr style="border: 1px solid #e0e0e0;">
                 <p style="margin: 10px 0; font-size: 0.9em;">
-                    🧬 AI-Powered Cell & Tissue Segmentation Platform | 基于人工智能的细胞组织分割分析平台
+                    🩸 AI-Powered Blood Cell Analysis Platform | 基于人工智能的血细胞分析平台
                 </p>
                 <hr style="border: 1px solid #e0e0e0;">
             </div>
