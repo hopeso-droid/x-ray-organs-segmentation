@@ -497,42 +497,7 @@ class Detection_UI:
             unsafe_allow_html=True
         )
         
-        # 科研免责声明和分析说明
-        col_disclaimer, col_instructions = st.columns([1, 1])
-        
-        with col_disclaimer:
-            st.markdown(
-                """
-                <div style="background-color: #fff8e1; border: 1px solid #ffcc02; border-radius: 5px; padding: 15px; margin-bottom: 15px;">
-                    <h4 style="color: #ff6f00; margin-top: 0;">⚠️ 系统使用声明</h4>
-                    <ul style="margin-bottom: 0; color: #ff6f00;">
-                        <li>本系统仅供生物医学研究和教学使用</li>
-                        <li>仅为辅助用于临床诊断或医疗决策</li>
-                        <li>分析结果需要专业研究人员验证</li>
-                        <li>细胞组织分割结果仅供科研参考</li>
-                        <li>使用前请确保数据合规性</li>
-                    </ul>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-            
-        with col_instructions:
-            st.markdown(
-                """
-                <div style="background-color: #e8f5e8; border: 1px solid #66bb6a; border-radius: 5px; padding: 15px; margin-bottom: 15px;">
-                    <h4 style="color: #2e7d32; margin-top: 0;">🔬 分析说明</h4>
-                    <ul style="margin-bottom: 0; color: #2e7d32;">
-                        <li><strong>分析类型：</strong>细胞组织智能分割</li>
-                        <li><strong>支持格式：</strong>JPG, PNG, JPEG, TIFF</li>
-                        <li><strong>最佳图像：</strong>高分辨率显微镜图像</li>
-                        <li><strong>分析指标：</strong>细胞名称、细胞面积、细胞周长、细胞圆度、细胞色彩值</li>
-                        <li><strong>置信度：</strong>建议设置0.3-0.7之间</li>
-                    </ul>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
+
 
     def setup_sidebar(self):
         """
@@ -558,52 +523,8 @@ class Detection_UI:
             help="用于消除重复分割区域的阈值"
         ))
         
-        # 设置侧边栏的模型设置部分
-        st.sidebar.header("🤖 AI 模型配置")
-        # 选择模型类型的下拉菜单
-        self.model_type = st.sidebar.selectbox(
-            "分析模式", 
-            ["检测任务 (Detection)", "分割任务 (Segmentation)"],
-            help="检测模式：标记细胞位置；分割模式：精确描绘细胞边界"
-        )
-
-
-        # 选择模型文件类型，可以是默认的或者自定义的
-        model_file_option = st.sidebar.radio("模型配置", ["使用预训练模型", "自定义模型权重"])
-        if model_file_option == "自定义模型权重":
-            # 如果选择自定义模型文件，则提供文件上传器
-            model_file = st.sidebar.file_uploader("上传训练好的.pt模型文件", type="pt")
-
-            # 如果上传了模型文件，则保存并加载该模型
-            if model_file is not None:
-                self.custom_model_file = save_uploaded_file(model_file)
-                self.model.load_model(model_path=self.custom_model_file)
-                self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in
-                               range(len(self.model.names))]
-        elif model_file_option == "使用预训练模型":
-            # 始终使用 tempDir/best.pt 作为默认模型
-            default_model_path = abs_path("tempDir/best.pt", path_type="current")
-            if os.path.exists(default_model_path):
-                self.model.load_model(model_path=default_model_path)
-                st.sidebar.success("✅ 已加载自定义训练模型：tempDir/best.pt")
-            else:
-                # 备用方案
-                if self.model_type == "检测任务 (Detection)":
-                    backup_path = abs_path("./yolo11s.pt", path_type="current")
-                elif self.model_type == "分割任务 (Segmentation)":
-                    backup_path = abs_path("./yolo11s-seg.pt", path_type="current")
-                
-                if os.path.exists(backup_path):
-                    self.model.load_model(model_path=backup_path)
-                    st.sidebar.warning("⚠️ best.pt未找到，使用备用模型")
-                else:
-                    st.sidebar.error("❌ 找不到任何可用的模型文件")
-            
-            # 为模型中的类别重新分配颜色
-            self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in
-                           range(len(self.model.names))]
-
-        st.sidebar.markdown("---")
+        # 设置默认模型类型
+        self.model_type = "分割任务 (Segmentation)"
 
         # 设置侧边栏的摄像头配置部分
         st.sidebar.header("📹 实时分析设置")
@@ -1301,14 +1222,40 @@ class Detection_UI:
             st.markdown("### 🎮 控制面板")
             self.close_placeholder = st.empty()
             
-            # 主要控制按钮
-            st.markdown("**主控制**")
-            if st.button("🔬 开始AI分析", help="启动AI细胞组织分割分析", type="primary"):
+            # 主要控制按钮 - 更大更醒目
+            st.markdown(
+                """
+                <style>
+                .big-button {
+                    width: 100%;
+                    height: 80px;
+                    font-size: 20px;
+                    font-weight: bold;
+                    border-radius: 10px;
+                    margin: 10px 0;
+                }
+                </style>
+                """,
+                unsafe_allow_html=True
+            )
+            
+            # 使用HTML和CSS创建更大的按钮
+            st.markdown("**🩸 血细胞分析**")
+            analysis_button = st.button(
+                "🔬 开始AI血细胞分析", 
+                help="上传血涂片图像，启动AI血细胞识别与分析", 
+                type="primary",
+                use_container_width=True
+            )
+            
+            if analysis_button:
                 self.process_camera_or_file()  # 运行摄像头或文件处理
+            
+            st.markdown("---")
             
             # 紧急停止按钮
             st.markdown("**紧急控制**")
-            if st.button("⏹️ 停止分析", help="立即停止当前分析进程"):
+            if st.button("⏹️ 停止分析", help="立即停止当前分析进程", use_container_width=True):
                 st.warning("⚠️ 分析进程已停止")
             
             # 系统状态显示
@@ -1336,6 +1283,46 @@ class Detection_UI:
                     else:  # 对比分析显示
                         self.image_placeholder.image(load_default_image(), caption="🔬 原始显微镜图像")
                         self.image_placeholder_res.image(load_default_image(), caption="🤖 AI分割结果")
+
+        # 系统使用说明和分析说明（页面底部）
+        st.markdown("---")
+        st.markdown("## 📋 系统使用说明")
+        
+        col_disclaimer, col_instructions = st.columns([1, 1])
+        
+        with col_disclaimer:
+            st.markdown(
+                """
+                <div style="background-color: #fff8e1; border: 1px solid #ffcc02; border-radius: 5px; padding: 15px; margin-bottom: 15px;">
+                    <h4 style="color: #ff6f00; margin-top: 0;">⚠️ 系统使用声明</h4>
+                    <ul style="margin-bottom: 0; color: #ff6f00;">
+                        <li>本系统仅供生物医学研究和教学使用</li>
+                        <li>仅为辅助用于临床诊断或医疗决策</li>
+                        <li>分析结果需要专业研究人员验证</li>
+                        <li>血细胞分析结果仅供科研参考</li>
+                        <li>使用前请确保数据合规性</li>
+                    </ul>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            
+        with col_instructions:
+            st.markdown(
+                """
+                <div style="background-color: #e8f5e8; border: 1px solid #66bb6a; border-radius: 5px; padding: 15px; margin-bottom: 15px;">
+                    <h4 style="color: #2e7d32; margin-top: 0;">🩸 血细胞分析说明</h4>
+                    <ul style="margin-bottom: 0; color: #2e7d32;">
+                        <li><strong>分析类型：</strong>血细胞智能识别与分类</li>
+                        <li><strong>支持格式：</strong>JPG, PNG, JPEG, TIFF</li>
+                        <li><strong>最佳图像：</strong>高分辨率血涂片显微镜图像</li>
+                        <li><strong>分析指标：</strong>细胞名称、细胞面积、细胞周长、细胞圆度、细胞色彩值</li>
+                        <li><strong>置信度：</strong>建议设置0.3-0.7之间</li>
+                    </ul>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
         # 添加公司版权信息到页面底部
         st.markdown("---")
