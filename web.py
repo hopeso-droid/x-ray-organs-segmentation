@@ -1173,16 +1173,16 @@ class Detection_UI:
                 <div style="background-color: #f8f9fa; border-left: 4px solid {quality_color}; padding: 15px; border-radius: 5px;">
                     <h5 style="color: {quality_color}; margin-top: 0;">血液分析质量：{quality_level}</h5>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 10px;">
-                        <span><strong>中性粒细胞：</strong>{analysis_stats['中性粒细胞']}</span>
-                        <span><strong>淋巴细胞：</strong>{analysis_stats['淋巴细胞']}</span>
-                        <span><strong>单核细胞：</strong>{analysis_stats['单核细胞']}</span>
-                        <span><strong>嗜酸性粒细胞：</strong>{analysis_stats['嗜酸性粒细胞']}</span>
-                        <span><strong>嗜碱性粒细胞：</strong>{analysis_stats['嗜碱性粒细胞']}</span>
-                        <span><strong>红细胞：</strong>{analysis_stats['红细胞']}</span>
-                        <span><strong>血小板：</strong>{analysis_stats['血小板']}</span>
-                        <span><strong>幼红细胞：</strong>{analysis_stats['幼红细胞']}</span>
-                        <span><strong>髓细胞：</strong>{analysis_stats['髓细胞']}</span>
-                        <span><strong>侵入物：</strong>{analysis_stats['侵入物']}</span>
+                        <span><strong>中性粒细胞：</strong>{analysis_stats.get('中性粒细胞', 0)}</span>
+                        <span><strong>淋巴细胞：</strong>{analysis_stats.get('淋巴细胞', 0)}</span>
+                        <span><strong>单核细胞：</strong>{analysis_stats.get('单核细胞', 0)}</span>
+                        <span><strong>嗜酸性粒细胞：</strong>{analysis_stats.get('嗜酸性粒细胞', 0)}</span>
+                        <span><strong>嗜碱性粒细胞：</strong>{analysis_stats.get('嗜碱性粒细胞', 0)}</span>
+                        <span><strong>红细胞：</strong>{analysis_stats.get('红细胞', 0)}</span>
+                        <span><strong>血小板：</strong>{analysis_stats.get('血小板', 0)}</span>
+                        <span><strong>幼红细胞：</strong>{analysis_stats.get('幼红细胞', 0)}</span>
+                        <span><strong>髓细胞：</strong>{analysis_stats.get('髓细胞', 0)}</span>
+                        <span><strong>侵入物：</strong>{analysis_stats.get('侵入物', 0)}</span>
                     </div>
                 </div>
                 """,
@@ -1195,24 +1195,29 @@ class Detection_UI:
                 st.markdown(f"{i}. {rec}")
                 
             # 显示主要血细胞类型的统计图表
-            if analysis_stats["总检测数"] > 0:
+            if analysis_stats.get("总检测数", 0) > 0:
                 col1, col2, col3, col4, col5 = st.columns(5)
-                total = analysis_stats["总检测数"]
+                total = analysis_stats.get("总检测数", 1)  # 避免除零
                 with col1:
-                    st.metric("中性粒细胞", analysis_stats["中性粒细胞"], 
-                             delta=f"{analysis_stats['中性粒细胞']/total*100:.1f}%")
+                    neutrophil_count = analysis_stats.get("中性粒细胞", 0)
+                    st.metric("中性粒细胞", neutrophil_count, 
+                             delta=f"{neutrophil_count/total*100:.1f}%")
                 with col2:
-                    st.metric("淋巴细胞", analysis_stats["淋巴细胞"],
-                             delta=f"{analysis_stats['淋巴细胞']/total*100:.1f}%")
+                    lymphocyte_count = analysis_stats.get("淋巴细胞", 0)
+                    st.metric("淋巴细胞", lymphocyte_count,
+                             delta=f"{lymphocyte_count/total*100:.1f}%")
                 with col3:
-                    st.metric("单核细胞", analysis_stats["单核细胞"],
-                             delta=f"{analysis_stats['单核细胞']/total*100:.1f}%")
+                    monocyte_count = analysis_stats.get("单核细胞", 0)
+                    st.metric("单核细胞", monocyte_count,
+                             delta=f"{monocyte_count/total*100:.1f}%")
                 with col4:
-                    st.metric("红细胞", analysis_stats["红细胞"],
-                             delta=f"{analysis_stats['红细胞']/total*100:.1f}%")
+                    rbc_count = analysis_stats.get("红细胞", 0)
+                    st.metric("红细胞", rbc_count,
+                             delta=f"{rbc_count/total*100:.1f}%")
                 with col5:
-                    st.metric("血小板", analysis_stats["血小板"],
-                             delta=f"{analysis_stats['血小板']/total*100:.1f}%")
+                    platelet_count = analysis_stats.get("血小板", 0)
+                    st.metric("血小板", platelet_count,
+                             delta=f"{platelet_count/total*100:.1f}%")
 
     def frame_table_process(self, frame, caption):
         # 显示画面并更新结果
