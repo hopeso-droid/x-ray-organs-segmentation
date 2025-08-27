@@ -4,7 +4,11 @@ import cv2
 import pandas as pd
 import streamlit as st
 from PIL import Image
-from QtFusion.path import abs_path
+try:
+    from QtFusion.path import abs_path
+except ImportError:
+    # 云端环境替代
+    from cloud_utils import abs_path
 
 
 def save_uploaded_file(uploaded_file):

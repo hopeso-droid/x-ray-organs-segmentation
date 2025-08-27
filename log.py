@@ -2,7 +2,11 @@ import os
 import time
 import cv2
 import pandas as pd
-from QtFusion.path import abs_path
+try:
+    from QtFusion.path import abs_path
+except ImportError:
+    # 云端环境替代
+    from cloud_utils import abs_path
 from PIL import Image
 import numpy as np
 from datetime import datetime

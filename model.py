@@ -1,7 +1,20 @@
 # -*- coding: utf-8 -*-
 import cv2  # 导入OpenCV库，用于处理图像和视频
 import torch
-from QtFusion.models import Detector, HeatmapGenerator  # 从QtFusion库中导入Detector抽象基类
+# 云端环境替代导入
+try:
+    from QtFusion.models import Detector, HeatmapGenerator
+except ImportError:
+    # 创建简单的基类替代
+    class Detector:
+        """简单的检测器基类"""
+        def __init__(self):
+            pass
+    
+    class HeatmapGenerator:
+        """简单的热图生成器基类"""
+        def __init__(self):
+            pass
 from chinese_name_list import Chinese_name  # 从datasets库中导入Chinese_name字典，用于获取类别的中文名称
 from ultralytics import YOLO  # 从ultralytics库中导入YOLO类，用于加载YOLO模型
 from ultralytics.utils.torch_utils import select_device  # 从ultralytics库中导入select_device函数，用于选择设备

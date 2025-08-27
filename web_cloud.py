@@ -16,16 +16,57 @@ from hashlib import md5
 # 导入云端工具
 from cloud_utils import abs_path, is_cloud_environment, get_camera_names_cloud, save_uploaded_file_cloud, cloud_logger
 
+# 定义默认值，防止导入失败
+Label_list = ["细胞核", "细胞质", "组织结构", "血管", "细胞", "细胞膜"]
+Chinese_to_English = {
+    "细胞核": "Nucleus",
+    "细胞质": "Cytoplasm", 
+    "组织结构": "Tissue",
+    "血管": "Vessel",
+    "细胞": "Cell",
+    "细胞膜": "Membrane"
+}
+
 # 导入本地模块
 try:
     from log import ResultLogger, LogTable
     from model import Web_Detector
-    from chinese_name_list import Label_list, Chinese_to_English
-    from ui_style import def_css_hitml
-    from utils import concat_results
+    
+    # 尝试导入标签列表，如果失败则使用默认值
+    try:
+        from chinese_name_list import Label_list as _Label_list, Chinese_to_English as _Chinese_to_English
+        Label_list = _Label_list
+        Chinese_to_English = _Chinese_to_English
+    except ImportError:
+        cloud_logger.warning("使用默认的标签列表")
+    
+    try:
+        from ui_style import def_css_hitml
+    except ImportError:
+        # 如果导入失败，创建一个空函数
+        def def_css_hitml():
+            pass
+        cloud_logger.warning("UI样式模块未找到，使用默认样式")
+    
+    try:
+        from utils import concat_results
+    except ImportError:
+        # 如果导入失败，创建一个简单的替代函数
+        def concat_results(result, location, confidence, time_str):
+            import pandas as pd
+            return pd.DataFrame({
+                '检测结果': [result],
+                '位置': [location], 
+                '置信度': [confidence],
+                '用时': [time_str]
+            })
+        cloud_logger.warning("utils模块未找到，使用默认函数")
+        
 except ImportError as e:
-    cloud_logger.error(f"导入本地模块失败: {e}")
-    st.error(f"模块导入失败: {e}")
+    cloud_logger.error(f"导入关键模块失败: {e}")
+    st.error(f"⚠️ 关键模块导入失败: {e}")
+    st.error("请检查依赖文件是否完整")
+    st.stop()
 
 def load_default_image():
     """

@@ -5,7 +5,12 @@ Cloud deployment utilities module
 import os
 import sys
 import platform
+import tempfile
+import logging
 from pathlib import Path
+import streamlit as st
+import gc
+import psutil
 
 def get_project_root():
     """获取项目根目录"""
