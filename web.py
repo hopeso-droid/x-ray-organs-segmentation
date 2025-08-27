@@ -430,26 +430,16 @@ class Detection_UI:
         self.model = st.session_state['model']
         
         # 加载训练的模型权重（默认使用 tempDir/best.pt）
-        st.info("🔄 正在自动加载AI模型...")
         default_model_path = abs_path("tempDir/best.pt", path_type="current")
-        
-        print(f"尝试加载模型: {default_model_path}")
-        print(f"文件是否存在: {os.path.exists(default_model_path)}")
         
         if os.path.exists(default_model_path):
             try:
-                st.info(f"📂 找到自定义训练模型: {default_model_path}")
                 self.model.load_model(model_path=default_model_path)
-                st.success("✅ 自定义训练模型加载成功！")
-                print("✅ 自定义模型加载成功")
             except Exception as e:
-                st.error(f"❌ 自定义模型加载失败: {e}")
-                print(f"❌ 自定义模型加载失败: {e}")
-                # 尝试备用模型
+                # 静默尝试备用模型
                 self._load_backup_model()
         else:
-            st.warning("⚠️ 未找到自定义训练模型，尝试使用备用模型")
-            print(f"❌ 文件不存在: {default_model_path}")
+            # 静默尝试备用模型
             self._load_backup_model()
         
         # 为模型中的类别重新分配颜色
@@ -464,7 +454,7 @@ class Detection_UI:
         self.setup_sidebar()  # 初始化侧边栏布局
     
     def _load_backup_model(self):
-        """加载备用模型"""
+        """静默加载备用模型"""
         backup_paths = [
             abs_path("weights/yolov8s-seg.pt", path_type="current"),
             abs_path("weights/yolov8s.pt", path_type="current"),
@@ -473,20 +463,15 @@ class Detection_UI:
         ]
         
         for backup_path in backup_paths:
-            print(f"检查备用模型: {backup_path}")
             if os.path.exists(backup_path):
                 try:
-                    st.info(f"📂 使用备用模型: {os.path.basename(backup_path)}")
                     self.model.load_model(model_path=backup_path)
-                    st.success("✅ 备用模型加载成功！")
-                    print(f"✅ 备用模型加载成功: {backup_path}")
                     return
                 except Exception as e:
-                    st.error(f"❌ 备用模型加载失败: {e}")
-                    print(f"❌ 备用模型加载失败: {e}")
+                    continue
         
+        # 只有在所有模型都加载失败时才显示错误
         st.error("⚠️ 找不到任何可用的模型文件！")
-        print("❌ 没有找到任何可用的模型文件")
 
     def setup_page(self):
         # 设置页面布局
