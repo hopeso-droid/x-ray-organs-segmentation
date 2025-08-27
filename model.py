@@ -67,6 +67,7 @@ class Web_Detector(Detector):  # 定义YOLOv8Detector类，继承自Detector类
         self.img = None  # 初始化图像为None
         self.names = list(Chinese_name.values())  # 获取所有类别的中文名称
         self.params = params if params else ini_params  # 如果提供了参数则使用提供的参数，否则使用默认参数
+        self.imgsz = 640  # 设置默认图像尺寸，用于模型预热
 
     def load_model(self, model_path):  # 定义加载模型的方法
         self.device = select_device(self.params['device'])  # 选择设备

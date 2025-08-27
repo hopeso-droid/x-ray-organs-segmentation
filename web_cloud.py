@@ -324,30 +324,44 @@ class Detection_UI_Cloud:
         try:
             # 优先使用自定义训练模型
             default_model_path = abs_path("tempDir/best.pt", path_type="current")
+            cloud_logger.info(f"尝试加载模型: {default_model_path}")
+            cloud_logger.info(f"文件是否存在: {os.path.exists(default_model_path)}")
+            
             if os.path.exists(default_model_path):
                 self.model.load_model(model_path=default_model_path)
-                cloud_logger.info(f"成功加载模型: {default_model_path}")
+                cloud_logger.info(f"✅ 成功加载自定义模型: {default_model_path}")
+                st.sidebar.success(f"✅ 已加载自定义训练模型")
+                st.session_state['model_loaded'] = True
+                st.session_state['model_path'] = default_model_path
                 return
             
             # 备用模型
             backup_paths = [
+                abs_path("weights/yolov8s-seg.pt", path_type="current"),
                 abs_path("weights/yolov8s.pt", path_type="current"),
-                abs_path("yolo11s.pt", path_type="current"),
-                abs_path("yolo11s-seg.pt", path_type="current")
+                abs_path("yolo11s-seg.pt", path_type="current"),
+                abs_path("yolo11s.pt", path_type="current")
             ]
             
             for backup_path in backup_paths:
+                cloud_logger.info(f"检查备用模型: {backup_path}")
                 if os.path.exists(backup_path):
                     self.model.load_model(model_path=backup_path)
-                    cloud_logger.info(f"成功加载备用模型: {backup_path}")
+                    cloud_logger.info(f"✅ 成功加载备用模型: {backup_path}")
+                    st.sidebar.warning(f"⚠️ 使用备用模型: {os.path.basename(backup_path)}")
+                    st.session_state['model_loaded'] = True
+                    st.session_state['model_path'] = backup_path
                     return
             
-            # 如果没有本地模型，尝试下载默认模型
-            cloud_logger.warning("未找到本地模型文件，将使用默认模型")
+            # 如果没有本地模型，记录错误
+            cloud_logger.error("❌ 未找到任何可用的模型文件")
+            st.sidebar.error("❌ 未找到模型文件")
+            st.session_state['model_loaded'] = False
             
         except Exception as e:
-            cloud_logger.error(f"模型加载失败: {e}")
-            st.error("⚠️ 模型加载失败，某些功能可能不可用")
+            cloud_logger.error(f"❌ 模型加载失败: {e}")
+            st.sidebar.error(f"⚠️ 模型加载失败: {str(e)}")
+            st.session_state['model_loaded'] = False
 
     def setup_page(self):
         """设置页面布局"""
@@ -511,6 +525,17 @@ class Detection_UI_Cloud:
     def frame_process(self, image, file_name, video_time=None):
         """处理并预测单个图像帧"""
         try:
+            # 检查模型是否已加载
+            if not hasattr(self.model, 'model') or self.model.model is None:
+                cloud_logger.error("模型未正确加载，无法进行检测")
+                st.error("⚠️ 模型未加载，请检查模型文件")
+                return image, [], ["全部目标"]
+            
+            # 检查 session_state 中的模型状态
+            if not st.session_state.get('model_loaded', False):
+                cloud_logger.warning("session_state中显示模型未加载")
+                st.warning("⚠️ 模型可能未正确加载")
+            
             pre_img = self.model.preprocess(image)
             
             # 更新模型参数
