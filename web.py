@@ -363,7 +363,7 @@ class Detection_UI:
 
     def __init__(self):
         """
-        初始化行人跌倒检测系统的参数。
+        初始化细胞检测系统的参数。
         """
         # 初始化类别标签列表和为每个类别随机分配颜色
         self.cls_name = Label_list
@@ -438,9 +438,6 @@ class Detection_UI:
             except Exception as e:
                 # 静默尝试备用模型
                 self._load_backup_model()
-        else:
-            # 静默尝试备用模型
-            self._load_backup_model()
         
         # 为模型中的类别重新分配颜色
         if hasattr(self.model, 'names') and self.model.names:
@@ -453,25 +450,6 @@ class Detection_UI:
         
         self.setup_sidebar()  # 初始化侧边栏布局
     
-    def _load_backup_model(self):
-        """静默加载备用模型"""
-        backup_paths = [
-            abs_path("weights/yolov8s-seg.pt", path_type="current"),
-            abs_path("weights/yolov8s.pt", path_type="current"),
-            abs_path("yolo11s-seg.pt", path_type="current"),
-            abs_path("yolo11s.pt", path_type="current")
-        ]
-        
-        for backup_path in backup_paths:
-            if os.path.exists(backup_path):
-                try:
-                    self.model.load_model(model_path=backup_path)
-                    return
-                except Exception as e:
-                    continue
-        
-        # 只有在所有模型都加载失败时才显示错误
-        st.error("⚠️ 找不到任何可用的模型文件！")
 
     def setup_page(self):
         # 设置页面布局
