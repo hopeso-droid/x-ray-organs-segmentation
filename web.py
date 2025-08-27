@@ -5,17 +5,11 @@ import os
 import cv2
 import numpy as np
 import streamlit as st
-# from QtFusion.path import abs_path  # 注释掉云端不可用的依赖
-
-def abs_path(path, path_type='current'):
-    """
-    获取绝对路径 - 替代 QtFusion.path.abs_path（云端兼容版本）
-    """
-    import os
-    if path_type == 'current':
-        return os.path.abspath(path)
-    else:
-        return os.path.abspath(path)
+try:
+    from QtFusion.path import abs_path
+except ImportError:
+    # 云端环境替代
+    from cloud_utils import abs_path
 # from QtFusion.utils import drawRectBox  # 注释掉有问题的导入
 
 from log import ResultLogger, LogTable
@@ -33,7 +27,7 @@ from hashlib import md5
 
 def load_default_image():
     """
-    加载适合血细胞分析系统的默认图片
+    加载适合细胞组织分割系统的默认图片
     """
     try:
         # 优先使用细胞图像作为默认图片
@@ -52,62 +46,56 @@ def load_default_image():
         print(f"Failed to load ini-image.png: {e}")
     
     try:
-        # 如果都不可用，创建一个自定义的血细胞主题默认图片
+        # 如果都不可用，创建一个自定义的默认图片
         width, height = 600, 400
         
-        # 创建一个深红色背景（模拟血涂片）
-        img_array = np.ones((height, width, 3), dtype=np.uint8)
-        img_array[:, :] = [40, 30, 45]  # 深红褐色背景
+        # 创建一个深灰色背景
+        img_array = np.ones((height, width, 3), dtype=np.uint8) * 45
         
         # 添加一个圆形区域模拟显微镜视场
         center_x, center_y = width // 2, height // 2
         radius = min(width, height) // 3
         
-        # 在圆形区域内创建稍亮的背景（模拟血涂片观察区域）
+        # 在圆形区域内创建稍亮的背景
         y, x = np.ogrid[:height, :width]
         mask = (x - center_x) ** 2 + (y - center_y) ** 2 <= radius ** 2
-        img_array[mask] = [65, 55, 70]  # 浅红褐色
+        img_array[mask] = [65, 65, 65]
         
         # 添加圆形边界
-        cv2.circle(img_array, (center_x, center_y), radius, (150, 120, 120), 2)
+        cv2.circle(img_array, (center_x, center_y), radius, (120, 120, 120), 2)
         
-        # 添加十字线（显微镜十字丝）
-        cv2.line(img_array, (center_x - 20, center_y), (center_x + 20, center_y), (120, 100, 100), 1)
-        cv2.line(img_array, (center_x, center_y - 20), (center_x, center_y + 20), (120, 100, 100), 1)
-        
-        # 添加一些模拟的血细胞形状
-        cv2.circle(img_array, (center_x - 40, center_y - 30), 8, (180, 150, 150), -1)  # 红细胞
-        cv2.circle(img_array, (center_x + 35, center_y + 25), 12, (200, 180, 160), -1)  # 白细胞
-        cv2.circle(img_array, (center_x + 10, center_y - 40), 6, (160, 140, 140), -1)   # 血小板
+        # 添加十字线
+        cv2.line(img_array, (center_x - 20, center_y), (center_x + 20, center_y), (100, 100, 100), 1)
+        cv2.line(img_array, (center_x, center_y - 20), (center_x, center_y + 20), (100, 100, 100), 1)
         
         # 添加文字
         font = cv2.FONT_HERSHEY_SIMPLEX
         font_scale = 0.8
-        color = (200, 180, 180)
+        color = (150, 150, 150)
         thickness = 2
         
         # 主标题
-        text1 = "AI Blood Cell Analysis"
+        text1 = "AI Cell Tissue Segmentation"
         text_size1 = cv2.getTextSize(text1, font, font_scale, thickness)[0]
         text_x1 = (width - text_size1[0]) // 2
-        text_y1 = center_y - 60
+        text_y1 = center_y - 50
         cv2.putText(img_array, text1, (text_x1, text_y1), font, font_scale, color, thickness)
         
         # 副标题
-        text2 = "Waiting for Blood Smear Image..."
+        text2 = "Waiting for Microscope Image..."
         font_scale2 = 0.6
         text_size2 = cv2.getTextSize(text2, font, font_scale2, thickness)[0]
         text_x2 = (width - text_size2[0]) // 2
-        text_y2 = center_y + 50
-        cv2.putText(img_array, text2, (text_x2, text_y2), font, font_scale2, (160, 140, 140), thickness)
+        text_y2 = center_y + 30
+        cv2.putText(img_array, text2, (text_x2, text_y2), font, font_scale2, (120, 120, 120), thickness)
         
         # 底部信息
-        text3 = "Upload blood smear images for AI analysis"
+        text3 = "Upload microscope images for AI analysis"
         font_scale3 = 0.4
         text_size3 = cv2.getTextSize(text3, font, font_scale3, 1)[0]
         text_x3 = (width - text_size3[0]) // 2
         text_y3 = height - 30
-        cv2.putText(img_array, text3, (text_x3, text_y3), font, font_scale3, (140, 120, 120), 1)
+        cv2.putText(img_array, text3, (text_x3, text_y3), font, font_scale3, (100, 100, 100), 1)
         
         # 转换为 PIL Image
         img_rgb = cv2.cvtColor(img_array, cv2.COLOR_BGR2RGB)
@@ -383,7 +371,7 @@ class Detection_UI:
                        range(len(self.cls_name))]
 
         # 设置页面标题
-        self.title = "AI血细胞分析系统 - Blood Cell Analysis System"
+        self.title = "AI细胞组织分割系统 - Cell Tissue Segmentation System"
         self.setup_page()  # 初始化页面布局
         def_css_hitml()  # 应用 CSS 样式
 
@@ -440,21 +428,65 @@ class Detection_UI:
             st.session_state['model'] = Web_Detector()  # 创建Detector模型实例
 
         self.model = st.session_state['model']
+        
         # 加载训练的模型权重（默认使用 tempDir/best.pt）
+        st.info("🔄 正在自动加载AI模型...")
         default_model_path = abs_path("tempDir/best.pt", path_type="current")
+        
+        print(f"尝试加载模型: {default_model_path}")
+        print(f"文件是否存在: {os.path.exists(default_model_path)}")
+        
         if os.path.exists(default_model_path):
-            self.model.load_model(model_path=default_model_path)
+            try:
+                st.info(f"📂 找到自定义训练模型: {default_model_path}")
+                self.model.load_model(model_path=default_model_path)
+                st.success("✅ 自定义训练模型加载成功！")
+                print("✅ 自定义模型加载成功")
+            except Exception as e:
+                st.error(f"❌ 自定义模型加载失败: {e}")
+                print(f"❌ 自定义模型加载失败: {e}")
+                # 尝试备用模型
+                self._load_backup_model()
         else:
-            # 如果 best.pt 不存在，使用备用模型
-            backup_path = abs_path("weights/yolov8s.pt", path_type="current")
-            if os.path.exists(backup_path):
-                self.model.load_model(model_path=backup_path)
-            else:
-                st.error("⚠️ 找不到模型文件，请检查 tempDir/best.pt 或 weights/yolov8s.pt")
+            st.warning("⚠️ 未找到自定义训练模型，尝试使用备用模型")
+            print(f"❌ 文件不存在: {default_model_path}")
+            self._load_backup_model()
+        
         # 为模型中的类别重新分配颜色
-        self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in
-                       range(len(self.model.names))]
+        if hasattr(self.model, 'names') and self.model.names:
+            self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in
+                           range(len(self.model.names))]
+        else:
+            # 使用默认的类别数量
+            self.colors = [[random.randint(0, 255) for _ in range(3)] for _ in
+                           range(6)]  # 默认6个类别
+        
         self.setup_sidebar()  # 初始化侧边栏布局
+    
+    def _load_backup_model(self):
+        """加载备用模型"""
+        backup_paths = [
+            abs_path("weights/yolov8s-seg.pt", path_type="current"),
+            abs_path("weights/yolov8s.pt", path_type="current"),
+            abs_path("yolo11s-seg.pt", path_type="current"),
+            abs_path("yolo11s.pt", path_type="current")
+        ]
+        
+        for backup_path in backup_paths:
+            print(f"检查备用模型: {backup_path}")
+            if os.path.exists(backup_path):
+                try:
+                    st.info(f"📂 使用备用模型: {os.path.basename(backup_path)}")
+                    self.model.load_model(model_path=backup_path)
+                    st.success("✅ 备用模型加载成功！")
+                    print(f"✅ 备用模型加载成功: {backup_path}")
+                    return
+                except Exception as e:
+                    st.error(f"❌ 备用模型加载失败: {e}")
+                    print(f"❌ 备用模型加载失败: {e}")
+        
+        st.error("⚠️ 找不到任何可用的模型文件！")
+        print("❌ 没有找到任何可用的模型文件")
 
     def setup_page(self):
         # 设置页面布局
@@ -467,13 +499,13 @@ class Detection_UI:
         # 专业化的标题和介绍
         st.markdown(
             f"""
-            <div style="text-align: center; background: linear-gradient(90deg, #8b0000 0%, #dc143c 100%); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                <div style="color: #ffe4e1; margin-bottom: 10px; font-size: 0.9em; font-weight: bold;">
+            <div style="text-align: center; background: linear-gradient(90deg, #2d5016 0%, #3e7b27 100%); padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <div style="color: #e8f5e8; margin-bottom: 10px; font-size: 0.9em; font-weight: bold;">
                     合溪生物科技 | Hexi Biotechnology Co., Ltd.
                 </div>
-                <h1 style="color: white; margin: 0; font-size: 2.5em;">🩸 {self.title}</h1>
-                <p style="color: #ffe4e1; margin: 10px 0 0 0; font-size: 1.1em;">
-                    基于深度学习的血细胞智能识别与分析系统
+                <h1 style="color: white; margin: 0; font-size: 2.5em;">🔬 {self.title}</h1>
+                <p style="color: #e8f5e8; margin: 10px 0 0 0; font-size: 1.1em;">
+                    基于深度学习的细胞组织智能分割与分析系统
                 </p>
             </div>
             """,
@@ -489,11 +521,11 @@ class Detection_UI:
                 <div style="background-color: #fff8e1; border: 1px solid #ffcc02; border-radius: 5px; padding: 15px; margin-bottom: 15px;">
                     <h4 style="color: #ff6f00; margin-top: 0;">⚠️ 科研使用声明</h4>
                     <ul style="margin-bottom: 0; color: #ff6f00;">
-                        <li>本系统仅供血液学研究和教学使用</li>
+                        <li>本系统仅供生物医学研究和教学使用</li>
                         <li>不可用于临床诊断或医疗决策</li>
-                        <li>血细胞分析结果需要专业医师验证</li>
-                        <li>血细胞识别结果仅供科研参考</li>
-                        <li>使用前请确保血液样本合规性</li>
+                        <li>分析结果需要专业研究人员验证</li>
+                        <li>细胞组织分割结果仅供科研参考</li>
+                        <li>使用前请确保数据合规性</li>
                     </ul>
                 </div>
                 """,
@@ -503,13 +535,13 @@ class Detection_UI:
         with col_instructions:
             st.markdown(
                 """
-                <div style="background-color: #fce4ec; border: 1px solid #e91e63; border-radius: 5px; padding: 15px; margin-bottom: 15px;">
-                    <h4 style="color: #c2185b; margin-top: 0;">🩸 分析说明</h4>
-                    <ul style="margin-bottom: 0; color: #c2185b;">
-                        <li><strong>分析类型：</strong>血细胞智能识别分类</li>
+                <div style="background-color: #e8f5e8; border: 1px solid #66bb6a; border-radius: 5px; padding: 15px; margin-bottom: 15px;">
+                    <h4 style="color: #2e7d32; margin-top: 0;">🔬 分析说明</h4>
+                    <ul style="margin-bottom: 0; color: #2e7d32;">
+                        <li><strong>分析类型：</strong>细胞组织智能分割</li>
                         <li><strong>支持格式：</strong>JPG, PNG, JPEG, TIFF</li>
-                        <li><strong>最佳图像：</strong>高质量血涂片显微镜图像</li>
-                        <li><strong>识别细胞：</strong>10种血细胞类型（白细胞、红细胞、血小板等）</li>
+                        <li><strong>最佳图像：</strong>高分辨率显微镜图像</li>
+                        <li><strong>分析指标：</strong>细胞边界、组织结构、形态特征</li>
                         <li><strong>置信度：</strong>建议设置0.3-0.7之间</li>
                     </ul>
                 </div>
@@ -524,21 +556,21 @@ class Detection_UI:
         在侧边栏中配置AI模型参数、分析模式以及显微镜图像输入等选项。
         """
         # 添加侧边栏标题
-        st.sidebar.markdown("### 🩸 AI 血细胞分析配置")
+        st.sidebar.markdown("### 🔬 AI 分析参数配置")
         
         # 置信度阈值的滑动条
-        st.sidebar.markdown("**识别敏感度设置**")
+        st.sidebar.markdown("**分析敏感度设置**")
         self.conf_threshold = float(st.sidebar.slider(
             "置信度阈值 (Confidence Threshold)", 
             min_value=0.0, max_value=1.0, value=0.3,
-            help="较低的值会识别更多血细胞，较高的值只识别确定性高的血细胞"
+            help="较低的值会分割更多细胞区域，较高的值只分割明确的细胞结构"
         ))
         
         # IOU阈值的滑动条
         self.iou_threshold = float(st.sidebar.slider(
             "重叠度阈值 (IoU Threshold)", 
             min_value=0.0, max_value=1.0, value=0.25,
-            help="用于消除重复识别的同一血细胞的阈值"
+            help="用于消除重复分割区域的阈值"
         ))
         
         # 设置侧边栏的模型设置部分
@@ -547,7 +579,7 @@ class Detection_UI:
         self.model_type = st.sidebar.selectbox(
             "分析模式", 
             ["检测任务 (Detection)", "分割任务 (Segmentation)"],
-            help="检测模式：标记血细胞位置和类型；分割模式：精确描绘血细胞边界"
+            help="检测模式：标记细胞位置；分割模式：精确描绘细胞边界"
         )
 
 
@@ -589,38 +621,38 @@ class Detection_UI:
         st.sidebar.markdown("---")
 
         # 设置侧边栏的摄像头配置部分
-        st.sidebar.header("📹 实时血细胞分析")
+        st.sidebar.header("📹 实时分析设置")
         # 选择摄像头的下拉菜单
         self.selected_camera = st.sidebar.selectbox("显微镜设备选择", self.available_cameras)
 
         # 设置侧边栏的识别项目设置部分
-        st.sidebar.header("🩸 血涂片图像输入")
+        st.sidebar.header("🔬 显微镜图像输入")
         # 选择文件类型的下拉菜单
-        self.file_type = st.sidebar.selectbox("图像类型", ["血涂片图像", "血细胞视频"])
+        self.file_type = st.sidebar.selectbox("图像类型", ["细胞切片图像", "组织学视频"])
         # 根据所选的文件类型，提供对应的文件上传器
-        if self.file_type == "血涂片图像":
+        if self.file_type == "细胞切片图像":
             self.uploaded_file = st.sidebar.file_uploader(
-                "上传血涂片显微镜图像", 
+                "上传显微镜图像", 
                 type=["jpg", "png", "jpeg", "tiff", "tif"],
-                help="支持 JPEG、PNG、TIFF 格式的血涂片显微镜图像"
+                help="支持 JPEG、PNG、TIFF 格式的显微镜图像"
             )
-        elif self.file_type == "血细胞视频":
+        elif self.file_type == "组织学视频":
             self.uploaded_video = st.sidebar.file_uploader(
-                "上传血细胞显微镜视频", 
+                "上传显微镜视频", 
                 type=["mp4", "avi", "mov"],
-                help="支持 MP4、AVI、MOV 格式的血细胞显微镜视频"
+                help="支持 MP4、AVI、MOV 格式的显微镜视频"
             )
 
         # 提供相关提示信息，根据所选摄像头和文件类型的不同情况
         st.sidebar.markdown("---")
         st.sidebar.markdown("### 📋 操作指南")
         if self.selected_camera == "摄像头检测关闭":
-            if self.file_type == "血涂片图像":
-                st.sidebar.info("🩸 请上传血涂片显微镜图像，然后点击'开始分析'按钮进行AI血细胞识别")
-            if self.file_type == "血细胞视频":
-                st.sidebar.info("🎥 请上传血细胞显微镜视频，然后点击'开始分析'按钮进行批量血细胞分析")
+            if self.file_type == "细胞切片图像":
+                st.sidebar.info("🔬 请上传显微镜图像，然后点击'开始分析'按钮进行AI细胞分割")
+            if self.file_type == "组织学视频":
+                st.sidebar.info("🎥 请上传显微镜视频，然后点击'开始分析'按钮进行批量分析")
         else:
-            st.sidebar.info("📷 请点击'开始实时分析'按钮，启动血细胞实时识别模式")
+            st.sidebar.info("📷 请点击'开始实时分析'按钮，启动显微镜实时分析模式")
 
     def load_model_file(self):
         if self.custom_model_file:
@@ -1031,144 +1063,116 @@ class Detection_UI:
 
     def get_biological_description(self, class_name, area):
         """
-        根据检测类别和血细胞面积生成专业的血液学描述
+        根据检测类别和细胞面积生成专业的生物学描述
         """
         descriptions = {
-            "嗜碱性粒细胞": {
-                "small": f"检测到小型嗜碱性粒细胞 (面积: {area}px²) - 可能为幼稚形态",
-                "medium": f"检测到标准嗜碱性粒细胞 (面积: {area}px²) - 正常成熟细胞",
-                "large": f"检测到大型嗜碱性粒细胞 (面积: {area}px²) - 细胞膨胀或活化状态"
+            "细胞核": {
+                "small": f"检测到小细胞核 (面积: {area}px²) - 细胞分裂期或幼稚细胞",
+                "medium": f"检测到正常细胞核 (面积: {area}px²) - 成熟细胞核形态",
+                "large": f"检测到大细胞核 (面积: {area}px²) - 可能为活跃增殖细胞"
             },
-            "嗜酸性粒细胞": {
-                "small": f"检测到小型嗜酸性粒细胞 (面积: {area}px²) - 幼稚形态",
-                "medium": f"检测到标准嗜酸性粒细胞 (面积: {area}px²) - 成熟粒细胞",
-                "large": f"检测到大型嗜酸性粒细胞 (面积: {area}px²) - 活化或变性"
+            "细胞质": {
+                "small": f"检测到少量细胞质 (面积: {area}px²) - 高核质比细胞",
+                "medium": f"检测到适量细胞质 (面积: {area}px²) - 正常核质比例",
+                "large": f"检测到丰富细胞质 (面积: {area}px²) - 分泌活跃或成熟细胞"
             },
-            "幼红细胞": {
-                "small": f"检测到小幼红细胞 (面积: {area}px²) - 早期幼稚阶段",
-                "medium": f"检测到标准幼红细胞 (面积: {area}px²) - 中等成熟度",
-                "large": f"检测到大幼红细胞 (面积: {area}px²) - 早期幼红细胞或巨幼红细胞"
+            "组织结构": {
+                "small": f"检测到局部组织结构 (面积: {area}px²) - 组织局部特征",
+                "medium": f"检测到典型组织结构 (面积: {area}px²) - 正常组织形态",
+                "large": f"检测到完整组织结构 (面积: {area}px²) - 组织结构完整"
             },
-            "异常细胞": {
-                "small": f"检测到小型异常细胞 (面积: {area}px²) - 需要进一步鉴别",
-                "medium": f"检测到异常细胞 (面积: {area}px²) - 形态学异常",
-                "large": f"检测到大型异常细胞 (面积: {area}px²) - 可能为肿瘤细胞"
-            },
-            "淋巴细胞": {
-                "small": f"检测到小淋巴细胞 (面积: {area}px²) - 静息状态",
-                "medium": f"检测到标准淋巴细胞 (面积: {area}px²) - 正常形态",
-                "large": f"检测到大淋巴细胞 (面积: {area}px²) - 活化淋巴细胞或异型淋巴"
-            },
-            "单核细胞": {
-                "small": f"检测到小型单核细胞 (面积: {area}px²) - 幼稚单核细胞",
-                "medium": f"检测到标准单核细胞 (面积: {area}px²) - 成熟单核细胞",
-                "large": f"检测到大型单核细胞 (面积: {area}px²) - 活化单核细胞"
-            },
-            "骨髓细胞": {
-                "small": f"检测到小型骨髓细胞 (面积: {area}px²) - 早期骨髓细胞",
-                "medium": f"检测到标准骨髓细胞 (面积: {area}px²) - 中性粒细胞前体",
-                "large": f"检测到大型骨髓细胞 (面积: {area}px²) - 晚期骨髓细胞"
-            },
-            "中性粒细胞": {
-                "small": f"检测到小型中性粒细胞 (面积: {area}px²) - 杆状核或幼稚形态",
-                "medium": f"检测到标准中性粒细胞 (面积: {area}px²) - 成熟分叶核",
-                "large": f"检测到大型中性粒细胞 (面积: {area}px²) - 活化或中毒性改变"
-            },
-            "血小板": {
-                "small": f"检测到小血小板 (面积: {area}px²) - 正常大小血小板",
-                "medium": f"检测到标准血小板 (面积: {area}px²) - 典型血小板",
-                "large": f"检测到大血小板 (面积: {area}px²) - 巨大血小板或聚集"
-            },
-            "红细胞": {
-                "small": f"检测到小红细胞 (面积: {area}px²) - 小红细胞症",
-                "medium": f"检测到标准红细胞 (面积: {area}px²) - 正常红细胞",
-                "large": f"检测到大红细胞 (面积: {area}px²) - 大红细胞症"
+            "血管": {
+                "small": f"检测到毛细血管 (面积: {area}px²) - 微血管结构",
+                "medium": f"检测到小血管 (面积: {area}px²) - 组织供血血管",
+                "large": f"检测到主要血管 (面积: {area}px²) - 大血管或动脉"
             }
         }
         
-        # 根据面积大小分类（血细胞的面积范围）
-        if area < 1500:
+        # 根据面积大小分类
+        if area < 2000:
             size_category = "small"
-        elif area < 5000:
+        elif area < 8000:
             size_category = "medium"
         else:
             size_category = "large"
             
-        # 获取对应的血液学描述
+        # 获取对应的生物学描述
         if class_name in descriptions:
             return descriptions[class_name][size_category]
         else:
-            return f"检测到 {class_name} (面积: {area}px²) - 需要进一步血液学分析"
+            return f"检测到 {class_name} (面积: {area}px²) - 需要进一步分析"
 
     def generate_analysis_assessment_content(self):
         """
-        生成血细胞分析评估汇总内容
+        生成分析评估汇总内容
         """
         if not hasattr(self, 'logTable') or len(self.logTable.saved_results) == 0:
-            return "📊 暂无血细胞分析数据进行评估", "", [], {}
+            return "📊 暂无分析数据进行评估", "", [], {}
         
-        # 统计不同类型的血细胞检测结果
+        # 统计不同类型的检测结果
         analysis_stats = {
-            "嗜碱性粒细胞": 0,
-            "嗜酸性粒细胞": 0,
-            "幼红细胞": 0,
-            "异常细胞": 0,
-            "淋巴细胞": 0,
-            "单核细胞": 0,
-            "骨髓细胞": 0,
-            "中性粒细胞": 0,
-            "血小板": 0,
-            "红细胞": 0,
-            "总检测数": len(self.logTable.saved_results)
+            "细胞核": 0,
+            "细胞质": 0,
+            "组织结构": 0,
+            "血管": 0,
+            "其他结构": 0,
+            "总分析数": len(self.logTable.saved_results)
         }
         
-        # 按类别统计血细胞
+        nucleus_cases = []
+        cytoplasm_cases = []
+        tissue_cases = []
+        vessel_cases = []
+        
         for result in self.logTable.saved_results:
             if len(result) >= 1:
                 # 结果结构：[name, bbox, biological_description, time, cls_id]
                 class_name = result[0] if len(result) > 0 else "未知"  # 第一个元素是类别名称
-                if class_name in analysis_stats:
-                    analysis_stats[class_name] += 1
+                if "细胞核" in str(class_name):
+                    analysis_stats["细胞核"] += 1
+                    nucleus_cases.append(result)
+                elif "细胞质" in str(class_name):
+                    analysis_stats["细胞质"] += 1
+                    cytoplasm_cases.append(result)
+                elif "组织结构" in str(class_name) or "组织" in str(class_name):
+                    analysis_stats["组织结构"] += 1
+                    tissue_cases.append(result)
+                elif "血管" in str(class_name):
+                    analysis_stats["血管"] += 1
+                    vessel_cases.append(result)
+                else:
+                    analysis_stats["其他结构"] += 1
         
-        # 计算血液学分析质量等级
-        total_cells = sum(analysis_stats[key] for key in analysis_stats if key != "总检测数")
-        white_cells = (analysis_stats["嗜碱性粒细胞"] + analysis_stats["嗜酸性粒细胞"] + 
-                      analysis_stats["淋巴细胞"] + analysis_stats["单核细胞"] + 
-                      analysis_stats["骨髓细胞"] + analysis_stats["中性粒细胞"])
-        abnormal_cells = analysis_stats["异常细胞"] + analysis_stats["幼红细胞"]
+        # 计算分析质量等级
+        total_structures = analysis_stats["细胞核"] + analysis_stats["细胞质"] + analysis_stats["组织结构"] + analysis_stats["血管"]
         
-        # 根据检测到的细胞数量和类型判断质量
-        if total_cells >= 20 and white_cells >= 5:
-            quality_level = "🟢 高质量血涂片"
+        if total_structures >= 10:
+            quality_level = "🟢 高质量"
             quality_color = "#2ed573"
             recommendations = [
-                "血涂片质量优秀，细胞形态清晰",
-                "检测到多种血细胞类型，样本代表性好",
-                "适合进行详细血液学形态分析",
-                "建议保存为高质量血液学样本"
+                "图像质量优秀，结构识别完整",
+                "细胞和组织特征清晰可见",
+                "适合进行详细形态学分析",
+                "建议保存为高质量样本"
             ]
-        elif total_cells >= 10:
-            quality_level = "🟡 中等质量血涂片"
+        elif total_structures >= 5:
+            quality_level = "🟡 中等质量"
             quality_color = "#ffa726"
             recommendations = [
-                "血涂片质量良好，主要血细胞可识别",
-                "建议优化染色技术提高细胞清晰度",
-                "可进行基本血液学观察",
-                "适合血液学教学使用"
+                "图像质量良好，主要结构可识别",
+                "建议优化染色或成像条件",
+                "可进行基本形态学观察",
+                "适合教学演示使用"
             ]
         else:
-            quality_level = "🔴 血涂片需要改进"
+            quality_level = "🔴 需要改进"
             quality_color = "#ff4757"
             recommendations = [
-                "检测到的血细胞数量较少，样本质量需改善",
-                "建议检查血涂片制备过程和染色步骤",
-                "优化显微镜成像参数和照明条件",
-                "考虑重新制备血涂片"
+                "检测到的结构较少，图像质量有待提高",
+                "建议检查样本制备过程",
+                "优化显微镜成像参数",
+                "考虑重新获取图像"
             ]
-        
-        # 异常细胞提示
-        if abnormal_cells > 0:
-            recommendations.append(f"⚠️ 检测到 {abnormal_cells} 个异常细胞，建议专业医师进一步评估")
         
         return quality_level, quality_color, recommendations, analysis_stats
 
@@ -1182,65 +1186,48 @@ class Detection_UI:
         quality_level, quality_color, recommendations, analysis_stats = self.generate_analysis_assessment_content()
         
         # 如果没有数据，显示提示信息
-        if isinstance(quality_level, str) and "暂无血细胞分析数据" in quality_level:
+        if isinstance(quality_level, str) and "暂无分析数据" in quality_level:
             self.analysis_assessment_placeholder.info(quality_level)
             return
         
         # 使用占位符更新内容
         with self.analysis_assessment_placeholder.container():
-            # 显示血细胞分析评估结果
+            # 显示分析评估结果
             st.markdown(
                 f"""
                 <div style="background-color: #f8f9fa; border-left: 4px solid {quality_color}; padding: 15px; border-radius: 5px;">
-                    <h5 style="color: {quality_color}; margin-top: 0;">血液学分析：{quality_level}</h5>
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 10px;">
-                        <span><strong>中性粒细胞：</strong>{analysis_stats['中性粒细胞']}个</span>
-                        <span><strong>淋巴细胞：</strong>{analysis_stats['淋巴细胞']}个</span>
-                        <span><strong>单核细胞：</strong>{analysis_stats['单核细胞']}个</span>
-                        <span><strong>嗜酸性粒细胞：</strong>{analysis_stats['嗜酸性粒细胞']}个</span>
-                        <span><strong>红细胞：</strong>{analysis_stats['红细胞']}个</span>
-                        <span><strong>血小板：</strong>{analysis_stats['血小板']}个</span>
+                    <h5 style="color: {quality_color}; margin-top: 0;">分析质量：{quality_level}</h5>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap;">
+                        <span><strong>细胞核：</strong>{analysis_stats['细胞核']}个</span>
+                        <span><strong>细胞质：</strong>{analysis_stats['细胞质']}个</span>
+                        <span><strong>组织：</strong>{analysis_stats['组织结构']}个</span>
+                        <span><strong>血管：</strong>{analysis_stats['血管']}个</span>
                     </div>
                 </div>
                 """,
                 unsafe_allow_html=True
             )
             
-            # 显示血液学分析建议
-            st.markdown("**🩸 血液学分析建议：**")
+            # 显示分析建议
+            st.markdown("**🔬 分析建议：**")
             for i, rec in enumerate(recommendations, 1):
                 st.markdown(f"{i}. {rec}")
                 
-            # 显示血细胞统计图表
-            if analysis_stats["总检测数"] > 0:
-                # 显示主要血细胞类型
-                col1, col2, col3 = st.columns(3)
+            # 显示统计图表
+            if analysis_stats["总分析数"] > 0:
+                col1, col2, col3, col4 = st.columns(4)
                 with col1:
-                    st.metric("白细胞总数", 
-                             analysis_stats['中性粒细胞'] + analysis_stats['淋巴细胞'] + 
-                             analysis_stats['单核细胞'] + analysis_stats['嗜酸性粒细胞'] + 
-                             analysis_stats['嗜碱性粒细胞'], 
-                             delta="白细胞计数")
+                    st.metric("细胞核", analysis_stats["细胞核"], 
+                             delta=f"{analysis_stats['细胞核']/analysis_stats['总分析数']*100:.1f}%")
                 with col2:
-                    st.metric("红细胞", analysis_stats["红细胞"],
-                             delta=f"{analysis_stats['红细胞']/analysis_stats['总检测数']*100:.1f}%")
+                    st.metric("细胞质", analysis_stats["细胞质"],
+                             delta=f"{analysis_stats['细胞质']/analysis_stats['总分析数']*100:.1f}%")
                 with col3:
-                    st.metric("血小板", analysis_stats["血小板"],
-                             delta=f"{analysis_stats['血小板']/analysis_stats['总检测数']*100:.1f}%")
-                
-                # 如果检测到异常细胞，单独显示
-                if analysis_stats["异常细胞"] > 0 or analysis_stats["幼红细胞"] > 0:
-                    st.markdown("---")
-                    st.markdown("**⚠️ 异常细胞检测：**")
-                    col1, col2 = st.columns(2)
-                    with col1:
-                        if analysis_stats["异常细胞"] > 0:
-                            st.metric("异常细胞", analysis_stats["异常细胞"], 
-                                     delta="需要进一步鉴别", delta_color="inverse")
-                    with col2:
-                        if analysis_stats["幼红细胞"] > 0:
-                            st.metric("幼红细胞", analysis_stats["幼红细胞"], 
-                                     delta="幼稚红细胞", delta_color="normal")
+                    st.metric("组织结构", analysis_stats["组织结构"],
+                             delta=f"{analysis_stats['组织结构']/analysis_stats['总分析数']*100:.1f}%")
+                with col4:
+                    st.metric("血管", analysis_stats["血管"],
+                             delta=f"{analysis_stats['血管']/analysis_stats['总分析数']*100:.1f}%")
 
     def frame_table_process(self, frame, caption):
         # 显示画面并更新结果
@@ -1266,7 +1253,7 @@ class Detection_UI:
             <div style="text-align: center; color: #666; margin: 20px 0;">
                 <hr style="border: 1px solid #e0e0e0;">
                 <p style="margin: 10px 0; font-size: 0.9em;">
-                    🩸 AI-Powered Blood Cell Analysis Platform | 基于人工智能的血细胞智能分析平台
+                    🧬 AI-Powered Cell & Tissue Segmentation Platform | 基于人工智能的细胞组织分割分析平台
                 </p>
                 <hr style="border: 1px solid #e0e0e0;">
             </div>
@@ -1279,43 +1266,43 @@ class Detection_UI:
 
         # 在第一列设置显示模式的选择
         with col1:
-            st.markdown("### 🩸 血细胞显示模式")
+            st.markdown("### 🔬 图像显示模式")
             self.display_mode = st.radio(
                 "选择显示方式", 
                 ["智能叠加显示", "对比分析显示"],
-                help="叠加显示：在原图上直接标注血细胞识别结果；对比显示：原图与识别结果分别显示"
+                help="叠加显示：在原图上直接标注分割结果；对比显示：原图与分割结果分别显示"
             )
             
             # 根据显示模式创建用于显示视频画面的空容器
             if self.display_mode == "智能叠加显示":
                 self.image_placeholder = st.empty()
                 if not self.logTable.saved_images_ini:
-                    self.image_placeholder.image(load_default_image(), caption="🩸 等待血涂片图像输入...")
+                    self.image_placeholder.image(load_default_image(), caption="🔬 等待显微镜图像输入...")
             else:
                 # "对比分析显示"
-                st.markdown("**原始图像 vs AI血细胞识别结果**")
+                st.markdown("**原始图像 vs AI分割结果**")
                 self.image_placeholder = st.empty()
                 self.image_placeholder_res = st.empty()
                 if not self.logTable.saved_images_ini:
-                    self.image_placeholder.image(load_default_image(), caption="🩸 原始血涂片图像")
-                    self.image_placeholder_res.image(load_default_image(), caption="🤖 AI血细胞识别结果")
+                    self.image_placeholder.image(load_default_image(), caption="🔬 原始显微镜图像")
+                    self.image_placeholder_res.image(load_default_image(), caption="🤖 AI分割结果")
             
             # 显示用的进度条
-            st.markdown("**🔄 血细胞分析进度**")
+            st.markdown("**🔄 分析进度**")
             self.progress_bar = st.progress(0)
 
         # 创建一个空的结果表格
-        res = concat_results("等待分析", "待识别血细胞", "0.00", "0.00s")
+        res = concat_results("等待分析", "待分割区域", "0.00", "0.00s")
 
         # 在最右侧列设置分析结果显示
         with col3:
-            st.markdown("### 🩸 AI血液学报告")
+            st.markdown("### 🔬 AI分析报告")
             self.table_placeholder = st.empty()  # 调整到最右侧显示
             self.table_placeholder.table(res)
 
-            # 血液学分析质量评估汇总
+            # 分析质量评估汇总
             st.markdown("---")
-            st.markdown("**📊 血液学分析评估**")
+            st.markdown("**📊 分析质量评估**")
             self.analysis_assessment_placeholder = st.empty()
             self.update_analysis_assessment()
 
@@ -1326,13 +1313,13 @@ class Detection_UI:
             
             # 主要控制按钮
             st.markdown("**主控制**")
-            if st.button("🩸 开始血细胞分析", help="启动AI血细胞智能识别分析", type="primary"):
+            if st.button("🔬 开始AI分析", help="启动AI细胞组织分割分析", type="primary"):
                 self.process_camera_or_file()  # 运行摄像头或文件处理
             
             # 紧急停止按钮
             st.markdown("**紧急控制**")
-            if st.button("⏹️ 停止分析", help="立即停止当前血细胞分析进程"):
-                st.warning("⚠️ 血细胞分析进程已停止")
+            if st.button("⏹️ 停止分析", help="立即停止当前分析进程"):
+                st.warning("⚠️ 分析进程已停止")
             
             # 系统状态显示
             st.markdown("---")
@@ -1355,10 +1342,10 @@ class Detection_UI:
             if not st.session_state.get('analysis_running', False):
                 if not self.logTable.saved_images_ini:
                     if self.display_mode == "智能叠加显示":
-                        self.image_placeholder.image(load_default_image(), caption="🩸 等待血涂片图像输入...")
+                        self.image_placeholder.image(load_default_image(), caption="🔬 等待显微镜图像输入...")
                     else:  # 对比分析显示
-                        self.image_placeholder.image(load_default_image(), caption="🩸 原始血涂片图像")
-                        self.image_placeholder_res.image(load_default_image(), caption="🤖 AI血细胞识别结果")
+                        self.image_placeholder.image(load_default_image(), caption="🔬 原始显微镜图像")
+                        self.image_placeholder_res.image(load_default_image(), caption="🤖 AI分割结果")
 
         # 添加公司版权信息到页面底部
         st.markdown("---")
@@ -1370,7 +1357,7 @@ class Detection_UI:
                     Powered by Hexi Biotechnology Co., Ltd.
                 </p>
                 <p style="margin: 5px 0 0 0; color: #adb5bd; font-size: 0.8em;">
-                    专业血液学AI分析解决方案提供商
+                    专业医学AI影像分析解决方案提供商
                 </p>
             </div>
             """,
