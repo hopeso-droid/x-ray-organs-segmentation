@@ -221,8 +221,8 @@ def adjust_parameter(image_size, base_size=1000):
 def draw_detections(image, info, alpha=0.2):
     name, bbox, conf, cls_id, mask = info['class_name'], info['bbox'], info['score'], info['class_id'], info['mask']
     
-    # 将中文标签转换为英文标签
-    english_name = Chinese_to_English.get(name, name)
+    # 直接使用中文标签显示，不转换为英文
+    display_name = name
     
     adjust_param = adjust_parameter(image.shape[:2])
     spacing = int(20 * adjust_param)
@@ -232,8 +232,8 @@ def draw_detections(image, info, alpha=0.2):
         aim_frame_area = (x2 - x1) * (y2 - y1)
         cv2.rectangle(image, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=int(5 * adjust_param))
         
-        # 使用英文标签和改进的文字绘制
-        label_text = f"{english_name} {conf:.2f}"
+        # 使用中文标签和改进的文字绘制
+        label_text = f"{display_name} {conf:.2f}"
         
         # 绘制黑色背景
         (text_width, text_height), baseline = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6 * adjust_param, 1)
@@ -267,10 +267,9 @@ def draw_detections(image, info, alpha=0.2):
             colors = np.mean([image[y, x] for x, y in selected_points[:, 0]], axis=0)
             color_str = f"({colors[0]:.1f}, {colors[1]:.1f}, {colors[2]:.1f})"
 
-            # 绘制类别名称（英文，改进显示）
+            # 绘制类别名称（中文，改进显示）
             x, y = np.min(mask_points, axis=0).astype(int)
-            english_name = Chinese_to_English.get(name, name)
-            label_text = f"{english_name} {conf:.2f}"
+            label_text = f"{display_name} {conf:.2f}"
             
             # 绘制黑色背景
             (text_width, text_height), baseline = cv2.getTextSize(label_text, cv2.FONT_HERSHEY_SIMPLEX, 0.6 * adjust_param, 1)
@@ -986,16 +985,16 @@ class Detection_UI:
         
         # 统计X光胸片各器官的检测结果
         analysis_stats = {
-            "嗜碱性粒细胞": 0,
-            "嗜酸性粒细胞": 0,
-            "幼红细胞": 0,
-            "侵入物": 0,
-            "淋巴细胞": 0,
-            "单核细胞": 0,
-            "髓细胞": 0,
-            "中性粒细胞": 0,
-            "血小板": 0,
-            "红细胞": 0,
+            "心脏": 0,
+            "肺部": 0,
+            "横膜": 0,
+            "肩胛骨": 0,
+            "胸骨": 0,
+            "肋骨": 0,
+            "胸椎": 0,
+            "胸腔": 0,
+            "纵隔": 0,
+            "锁骨": 0,
             "总检测数": len(self.logTable.saved_results)
         }
         
@@ -1007,36 +1006,36 @@ class Detection_UI:
                 if str(class_name) in analysis_stats:
                     analysis_stats[str(class_name)] += 1
         
-        # 计算血细胞分布质量等级
-        total_cells = sum([analysis_stats[key] for key in analysis_stats if key != "总检测数"])
-        cell_types_found = len([key for key in analysis_stats if analysis_stats[key] > 0 and key != "总检测数"])
+        # 计算X光胸片器官分析质量等级
+        total_organs = sum([analysis_stats[key] for key in analysis_stats if key != "总检测数"])
+        organ_types_found = len([key for key in analysis_stats if analysis_stats[key] > 0 and key != "总检测数"])
         
-        if total_cells >= 20 and cell_types_found >= 5:
-            quality_level = "🟢 优秀血涂片"
+        if total_organs >= 8 and organ_types_found >= 5:
+            quality_level = "🟢 优秀X光片质量"
             quality_color = "#2ed573"
             recommendations = [
-                f"检测到{cell_types_found}种血细胞类型，样本多样性好",
-                f"总计{total_cells}个细胞，数量充足适合分析",
-                "血细胞形态清晰，适合血液学研究",
-                "建议保存为高质量血液样本"
+                f"检测到{organ_types_found}种胸部器官，图像质量优秀",
+                f"总计{total_organs}个器官结构，适合详细分析",
+                "X光片成像清晰，器官边界明显",
+                "建议保存为高质量医学影像样本"
             ]
-        elif total_cells >= 10 and cell_types_found >= 3:
-            quality_level = "🟡 良好血涂片"
+        elif total_organs >= 4 and organ_types_found >= 3:
+            quality_level = "🟡 良好X光片质量"
             quality_color = "#ffa726"
             recommendations = [
-                f"检测到{cell_types_found}种血细胞类型",
-                f"总计{total_cells}个细胞，基本满足分析要求",
-                "可进行基本血液学观察",
-                "适合教学演示使用"
+                f"检测到{organ_types_found}种胸部器官",
+                f"总计{total_organs}个器官结构，基本满足分析要求",
+                "可进行基本胸部器官分析",
+                "适合医学影像教学使用"
             ]
         else:
             quality_level = "🔴 需要改进"
             quality_color = "#ff4757"
             recommendations = [
-                f"仅检测到{cell_types_found}种血细胞类型，样本单一",
-                f"总计{total_cells}个细胞，数量偏少",
-                "建议优化血涂片制备技术",
-                "考虑重新采样或调整成像参数"
+                f"仅检测到{organ_types_found}种胸部器官，图像质量偏低",
+                f"总计{total_organs}个器官结构，数量偏少",
+                "建议优化X光拍摄参数",
+                "考虑重新拍摄或调整成像条件"
             ]
         
         return quality_level, quality_color, recommendations, analysis_stats
@@ -1057,22 +1056,22 @@ class Detection_UI:
         
         # 使用占位符更新内容
         with self.analysis_assessment_placeholder.container():
-            # 显示血细胞分析评估结果
+            # 显示X光胸片器官分析评估结果
             st.markdown(
                 f"""
                 <div style="background-color: #f8f9fa; border-left: 4px solid {quality_color}; padding: 15px; border-radius: 5px;">
-                    <h5 style="color: {quality_color}; margin-top: 0;">血液分析质量：{quality_level}</h5>
+                    <h5 style="color: {quality_color}; margin-top: 0;">器官分析质量：{quality_level}</h5>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 10px;">
-                        <span><strong>中性粒细胞：</strong>{analysis_stats.get('中性粒细胞', 0)}</span>
-                        <span><strong>淋巴细胞：</strong>{analysis_stats.get('淋巴细胞', 0)}</span>
-                        <span><strong>单核细胞：</strong>{analysis_stats.get('单核细胞', 0)}</span>
-                        <span><strong>嗜酸性粒细胞：</strong>{analysis_stats.get('嗜酸性粒细胞', 0)}</span>
-                        <span><strong>嗜碱性粒细胞：</strong>{analysis_stats.get('嗜碱性粒细胞', 0)}</span>
-                        <span><strong>红细胞：</strong>{analysis_stats.get('红细胞', 0)}</span>
-                        <span><strong>血小板：</strong>{analysis_stats.get('血小板', 0)}</span>
-                        <span><strong>幼红细胞：</strong>{analysis_stats.get('幼红细胞', 0)}</span>
-                        <span><strong>髓细胞：</strong>{analysis_stats.get('髓细胞', 0)}</span>
-                        <span><strong>侵入物：</strong>{analysis_stats.get('侵入物', 0)}</span>
+                        <span><strong>心脏：</strong>{analysis_stats.get('心脏', 0)}</span>
+                        <span><strong>肺部：</strong>{analysis_stats.get('肺部', 0)}</span>
+                        <span><strong>横膜：</strong>{analysis_stats.get('横膜', 0)}</span>
+                        <span><strong>肩胛骨：</strong>{analysis_stats.get('肩胛骨', 0)}</span>
+                        <span><strong>胸骨：</strong>{analysis_stats.get('胸骨', 0)}</span>
+                        <span><strong>肋骨：</strong>{analysis_stats.get('肋骨', 0)}</span>
+                        <span><strong>胸椎：</strong>{analysis_stats.get('胸椎', 0)}</span>
+                        <span><strong>胸腔：</strong>{analysis_stats.get('胸腔', 0)}</span>
+                        <span><strong>纵隔：</strong>{analysis_stats.get('纵隔', 0)}</span>
+                        <span><strong>锁骨：</strong>{analysis_stats.get('锁骨', 0)}</span>
                     </div>
                 </div>
                 """,
@@ -1080,34 +1079,34 @@ class Detection_UI:
             )
             
             # 显示分析建议
-            st.markdown("**🩸 血液学分析建议：**")
+            st.markdown("**🩻 医学影像分析建议：**")
             for i, rec in enumerate(recommendations, 1):
                 st.markdown(f"{i}. {rec}")
                 
-            # 显示主要血细胞类型的统计图表
+            # 显示主要器官类型的统计图表
             if analysis_stats.get("总检测数", 0) > 0:
                 col1, col2, col3, col4, col5 = st.columns(5)
                 total = analysis_stats.get("总检测数", 1)  # 避免除零
                 with col1:
-                    neutrophil_count = analysis_stats.get("中性粒细胞", 0)
-                    st.metric("中性粒细胞", neutrophil_count, 
-                             delta=f"{neutrophil_count/total*100:.1f}%")
+                    heart_count = analysis_stats.get("心脏", 0)
+                    st.metric("心脏", heart_count, 
+                             delta=f"{heart_count/total*100:.1f}%")
                 with col2:
-                    lymphocyte_count = analysis_stats.get("淋巴细胞", 0)
-                    st.metric("淋巴细胞", lymphocyte_count,
-                             delta=f"{lymphocyte_count/total*100:.1f}%")
+                    lung_count = analysis_stats.get("肺部", 0)
+                    st.metric("肺部", lung_count,
+                             delta=f"{lung_count/total*100:.1f}%")
                 with col3:
-                    monocyte_count = analysis_stats.get("单核细胞", 0)
-                    st.metric("单核细胞", monocyte_count,
-                             delta=f"{monocyte_count/total*100:.1f}%")
+                    rib_count = analysis_stats.get("肋骨", 0)
+                    st.metric("肋骨", rib_count,
+                             delta=f"{rib_count/total*100:.1f}%")
                 with col4:
-                    rbc_count = analysis_stats.get("红细胞", 0)
-                    st.metric("红细胞", rbc_count,
-                             delta=f"{rbc_count/total*100:.1f}%")
+                    spine_count = analysis_stats.get("胸椎", 0)
+                    st.metric("胸椎", spine_count,
+                             delta=f"{spine_count/total*100:.1f}%")
                 with col5:
-                    platelet_count = analysis_stats.get("血小板", 0)
-                    st.metric("血小板", platelet_count,
-                             delta=f"{platelet_count/total*100:.1f}%")
+                    sternum_count = analysis_stats.get("胸骨", 0)
+                    st.metric("胸骨", sternum_count,
+                             delta=f"{sternum_count/total*100:.1f}%")
 
     def frame_table_process(self, frame, caption):
         # 显示画面并更新结果
