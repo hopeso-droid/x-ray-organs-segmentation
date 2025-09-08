@@ -1,6 +1,6 @@
 """
-X光胸片器官分割系统 - Streamlit 版本
-X-ray Chest Organs Segmentation System - Streamlit Version
+AI 胸部X光病症检测系统 - Streamlit 版本
+AI Chest X-ray Disease Detection System - Streamlit Version
 """
 import os
 import sys
@@ -16,7 +16,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import streamlit as st
 
 st.set_page_config(
-    page_title="AI X光胸片器官分割系统",
+    page_title="AI 胸部X光病症检测系统",
     page_icon="🩻",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -24,19 +24,19 @@ st.set_page_config(
         'Get Help': None,
         'Report a bug': None,
         'About': """
-        # AI X光胸片器官分割系统
+        # AI 胸部X光病症检测系统
         
         **版本**: 1.0.0  
         **开发**: 合溪生物科技  
         **用途**: 医学影像科研和教学使用
         
-        本系统基于深度学习技术，提供X光胸片器官的智能分割和分析功能。
+        本系统基于深度学习技术，提供胸部X光的智能病症检测和分析功能。
         """
     }
 )
 
 try:
-    # 导入X光胸片器官分割系统的web.py
+    # 导入胸部X光病症检测系统的web.py
     from web import Detection_UI
     
     def main():

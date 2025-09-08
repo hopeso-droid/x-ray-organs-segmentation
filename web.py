@@ -355,7 +355,7 @@ class Detection_UI:
                        range(len(self.cls_name))]
 
         # 设置页面标题
-        self.title = "AI X光胸片器官分割系统 - X-ray Organs Segmentation System"
+        self.title = "AI 胸部X光病症检测系统 - Chest X-ray Disease Detection System"
         self.setup_page()  # 初始化页面布局
         def_css_hitml()  # 应用 CSS 样式
 
@@ -452,7 +452,7 @@ class Detection_UI:
                 </div>
                 <h1 style="color: white; margin: 0; font-size: 2.5em;">🩻 {self.title}</h1>
                 <p style="color: #e8f5e8; margin: 10px 0 0 0; font-size: 1.1em;">
-                    基于深度学习的X光胸片器官智能分割与分析系统
+                    基于深度学习的胸部X光智能病症检测与分析系统
                 </p>
             </div>
             """,
@@ -465,7 +465,7 @@ class Detection_UI:
         """
         设置 Streamlit 侧边栏。
 
-        在侧边栏中配置AI模型参数、分析模式以及X光胸片图像输入等选项。
+        在侧边栏中配置AI模型参数、检测模式以及X光胸片图像输入等选项。
         """
         # 添加侧边栏标题
         st.sidebar.markdown("### 🔬 AI 分析参数配置")
@@ -475,14 +475,14 @@ class Detection_UI:
         self.conf_threshold = float(st.sidebar.slider(
             "置信度阈值 (Confidence Threshold)", 
             min_value=0.0, max_value=1.0, value=0.3,
-            help="较低的值会分割更多器官区域，较高的值只分割明确的器官结构"
+            help="较低的值会检测更多潜在病症，较高的值只检测明确的病症特征"
         ))
         
         # IOU阈值的滑动条
         self.iou_threshold = float(st.sidebar.slider(
             "重叠度阈值 (IoU Threshold)", 
             min_value=0.0, max_value=1.0, value=0.25,
-            help="用于消除重复分割区域的阈值"
+            help="用于消除重复检测区域的阈值"
         ))
         
         # 设置侧边栏的分析模式选择
@@ -491,7 +491,7 @@ class Detection_UI:
             "选择分析模式", 
             ["检测任务 (Detection)", "分割任务 (Segmentation)"],
             index=1,  # 默认选择分割任务
-            help="检测模式：标记器官位置；分割模式：精确描绘器官边界"
+            help="检测模式：标记病症位置；分割模式：精确描绘病症边界"
         )
 
         # 设置侧边栏的摄像头配置部分
@@ -522,7 +522,7 @@ class Detection_UI:
         st.sidebar.markdown("### 📋 操作指南")
         if self.selected_camera == "摄像头检测关闭":
             if self.file_type == "X光胸片图像":
-                st.sidebar.info("🩻 请上传X光胸片图像，然后点击'开始分析'按钮进行AI器官分割")
+                st.sidebar.info("🩻 请上传X光胸片图像，然后点击'开始分析'按钮进行AI病症检测")
             if self.file_type == "X光影像视频":
                 st.sidebar.info("🎥 请上传X光影像视频，然后点击'开始分析'按钮进行批量分析")
         else:
@@ -1130,7 +1130,7 @@ class Detection_UI:
             <div style="text-align: center; color: #666; margin: 20px 0;">
                 <hr style="border: 1px solid #e0e0e0;">
                 <p style="margin: 10px 0; font-size: 0.9em;">
-                    🩻 AI-Powered X-ray Organs Segmentation Platform | 基于人工智能的X光胸片器官分割平台
+                    🩻 AI-Powered Chest X-ray Disease Detection Platform | 基于人工智能的胸部X光病症检测平台
                 </p>
                 <hr style="border: 1px solid #e0e0e0;">
             </div>
@@ -1248,10 +1248,10 @@ class Detection_UI:
             )
             
             # 使用HTML和CSS创建更大的按钮
-            st.markdown("**🩻 X光胸片器官分析**")
+            st.markdown("**🩻 胸部X光病症检测**")
             analysis_button = st.button(
-                "🩻 开始AI器官分割分析", 
-                help="上传X光胸片图像，启动AI器官识别与分割", 
+                "🩻 开始AI病症检测分析", 
+                help="上传X光胸片图像，启动AI病症识别与检测", 
                 type="primary",
                 use_container_width=True
             )
@@ -1307,7 +1307,7 @@ class Detection_UI:
                         <li>本系统仅供生物医学研究和教学使用</li>
                         <li>仅为辅助用于临床诊断或医疗决策</li>
                         <li>分析结果需要专业研究人员验证</li>
-                        <li>X光胸片器官分割结果仅供科研参考</li>
+                        <li>X光胸片病症检测结果仅供科研参考</li>
                         <li>使用前请确保数据合规性</li>
                     </ul>
                 </div>
@@ -1319,12 +1319,12 @@ class Detection_UI:
             st.markdown(
                 """
                 <div style="background-color: #e8f5e8; border: 1px solid #66bb6a; border-radius: 5px; padding: 15px; margin-bottom: 15px;">
-                    <h4 style="color: #2e7d32; margin-top: 0;">🩻 X光胸片器官分析说明</h4>
+                    <h4 style="color: #2e7d32; margin-top: 0;">🩻 胸部X光病症检测说明</h4>
                     <ul style="margin-bottom: 0; color: #2e7d32;">
-                        <li><strong>分析类型：</strong>X光胸片器官智能识别与分割</li>
+                        <li><strong>检测类型：</strong>胸部X光病症智能识别与检测</li>
                         <li><strong>支持格式：</strong>JPG, PNG, JPEG, TIFF, DICOM</li>
                         <li><strong>最佳图像：</strong>高分辨率胸部X光片图像</li>
-                        <li><strong>分析指标：</strong>器官名称、器官面积、器官边界、器官形态、器官密度值</li>
+                        <li><strong>检测指标：</strong>病症名称、病症区域、病症边界、病症特征、密度值</li>
                         <li><strong>置信度：</strong>建议设置0.3-0.7之间</li>
                     </ul>
                 </div>
