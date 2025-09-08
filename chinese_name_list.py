@@ -1,45 +1,39 @@
 # -*- coding: utf-8 -*-
 
-# 根据data.yaml中的血细胞类别定义中英文映射
+# 根据X光胸片器官分割模型的类别定义中英文映射
 Chinese_name = {
-    'Basophil': "嗜碱性粒细胞",
-    'Eosinophil': "嗜酸性粒细胞", 
-    'Erythroblast': "幼红细胞",
-    'Intrusion': "侵入物",
-    'Lymphocyte': "淋巴细胞",
-    'Monocyte': "单核细胞",
-    'Myelocyte': "髓细胞",
-    'Neutrophil': "中性粒细胞",
-    'Platelet': "血小板",
-    'RBC': "红细胞"
+    'Heart': "心脏",
+    'Left_Lung': "左肺",
+    'Right_Lung': "右肺", 
+    'Spine': "脊椎",
+    'Weasand': "气管"
 }
 
 # 英文标签，用于图像上的文字显示
 English_labels = {
-    'Basophil': "Basophil",
-    'Eosinophil': "Eosinophil",
-    'Erythroblast': "Erythroblast", 
-    'Intrusion': "Intrusion",
-    'Lymphocyte': "Lymphocyte",
-    'Monocyte': "Monocyte",
-    'Myelocyte': "Myelocyte",
-    'Neutrophil': "Neutrophil",
-    'Platelet': "Platelet",
-    'RBC': "RBC"
+    'Heart': "Heart",
+    'Left_Lung': "Left_Lung",
+    'Right_Lung': "Right_Lung",
+    'Spine': "Spine",
+    'Weasand': "Weasand"
 }
 
 # 中文到英文的映射
 Chinese_to_English = {
-    "嗜碱性粒细胞": "Basophil",
-    "嗜酸性粒细胞": "Eosinophil",
-    "幼红细胞": "Erythroblast",
-    "侵入物": "Intrusion",
-    "淋巴细胞": "Lymphocyte",
-    "单核细胞": "Monocyte",
-    "髓细胞": "Myelocyte",
-    "中性粒细胞": "Neutrophil",
-    "血小板": "Platelet",
-    "红细胞": "RBC"
+    "心脏": "Heart",
+    "左肺": "Left_Lung",
+    "右肺": "Right_Lung",
+    "脊椎": "Spine",
+    "气管": "Weasand"
+}
+
+# 英文到中文的映射
+English_to_Chinese = {
+    "Heart": "心脏",
+    "Left_Lung": "左肺",
+    "Right_Lung": "右肺",
+    "Spine": "脊椎",
+    "Weasand": "气管"
 }
 
 Label_list = list(Chinese_name.values())

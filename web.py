@@ -14,7 +14,7 @@ except ImportError:
 
 from log import ResultLogger, LogTable
 from model import Web_Detector
-from chinese_name_list import Label_list, Chinese_to_English
+from chinese_name_list import Label_list, Chinese_to_English, English_to_Chinese
 from ui_style import def_css_hitml
 from utils import save_uploaded_file, concat_results, get_camera_names
 import tempfile
@@ -221,8 +221,8 @@ def adjust_parameter(image_size, base_size=1000):
 def draw_detections(image, info, alpha=0.2):
     name, bbox, conf, cls_id, mask = info['class_name'], info['bbox'], info['score'], info['class_id'], info['mask']
     
-    # 直接使用中文标签显示，不转换为英文
-    display_name = name
+    # 如果是英文名称，转换为中文显示；如果已经是中文，直接使用
+    display_name = English_to_Chinese.get(name, name)
     
     adjust_param = adjust_parameter(image.shape[:2])
     spacing = int(20 * adjust_param)
@@ -908,23 +908,26 @@ class Detection_UI:
                 # 遍历检测到的对象
                 for info in det_info:
                     name, bbox, conf, cls_id, mask = info['class_name'], info['bbox'], info['score'], info['class_id'], info['mask']
+                    
+                    # 将英文名称转换为中文名称用于后续处理
+                    chinese_name = English_to_Chinese.get(name, name)
 
                     # 绘制检测框、标签和面积信息
                     image,aim_frame_area = draw_detections(image, info, alpha=0.5)
                     # image = drawRectBox(image, bbox, alpha=0.2, addText=label, color=self.colors[cls_id])
 
                     # 根据不同类型提供专业化的生物学术语描述
-                    biological_description = self.get_biological_description(name, int(aim_frame_area))
+                    biological_description = self.get_biological_description(chinese_name, int(aim_frame_area))
                     
-                    res = disp_res.concat_results(name, bbox, biological_description,
+                    res = disp_res.concat_results(chinese_name, bbox, biological_description,
                                                   video_time if video_time is not None else str(round(use_time, 2)))
 
                     # 添加日志条目
-                    self.logTable.add_log_entry(file_name, name, bbox, biological_description, video_time if video_time is not None else str(round(use_time, 2)))
+                    self.logTable.add_log_entry(file_name, chinese_name, bbox, biological_description, video_time if video_time is not None else str(round(use_time, 2)))
                     # 记录检测信息
-                    detInfo.append([name, bbox, biological_description, video_time if video_time is not None else str(round(use_time, 2)), cls_id])
+                    detInfo.append([chinese_name, bbox, biological_description, video_time if video_time is not None else str(round(use_time, 2)), cls_id])
                     # 添加到选择信息列表
-                    select_info.append(name + "-" + str(cnt))
+                    select_info.append(chinese_name + "-" + str(cnt))
                     cnt += 1
 
                 # 在表格中显示检测结果
@@ -941,24 +944,29 @@ class Detection_UI:
         """
         descriptions = {
             "心脏": {
-                "small": f"检测到小心脏影像 (面积: {area}px²) - 可能为儿童或部分心脏显示",
-                "medium": f"检测到正常心脏影像 (面积: {area}px²) - 正常成人心脏大小",
-                "large": f"检测到大心脏影像 (面积: {area}px²) - 可能存在心脏扩大"
+                "small": f"检测到心脏轮廓 (面积: {area}px²) - 可能为部分心脏显示或儿童心脏",
+                "medium": f"检测到正常心脏影像 (面积: {area}px²) - 标准成人心脏大小和形态",
+                "large": f"检测到心脏扩大影像 (面积: {area}px²) - 可能存在心脏扩大或心包积液"
             },
-            "肺部": {
-                "small": f"检测到小肺部区域 (面积: {area}px²) - 局部肺部组织",
-                "medium": f"检测到正常肺部区域 (面积: {area}px²) - 正常肺部组织结构",
-                "large": f"检测到大肺部区域 (面积: {area}px²) - 可能存在肺部扩张或病变"
+            "左肺": {
+                "small": f"检测到左肺局部区域 (面积: {area}px²) - 部分左肺野显示",
+                "medium": f"检测到左肺正常影像 (面积: {area}px²) - 左肺野清晰，纹理正常",
+                "large": f"检测到左肺完整区域 (面积: {area}px²) - 左肺野充分显示，可能存在病变"
             },
-            "组织结构": {
-                "small": f"检测到局部组织结构 (面积: {area}px²) - 组织局部特征",
-                "medium": f"检测到典型组织结构 (面积: {area}px²) - 正常组织形态",
-                "large": f"检测到完整组织结构 (面积: {area}px²) - 组织结构完整"
+            "右肺": {
+                "small": f"检测到右肺局部区域 (面积: {area}px²) - 部分右肺野显示", 
+                "medium": f"检测到右肺正常影像 (面积: {area}px²) - 右肺野清晰，纹理正常",
+                "large": f"检测到右肺完整区域 (面积: {area}px²) - 右肺野充分显示，可能存在病变"
             },
-            "血管": {
-                "small": f"检测到毛细血管 (面积: {area}px²) - 微血管结构",
-                "medium": f"检测到小血管 (面积: {area}px²) - 组织供血血管",
-                "large": f"检测到主要血管 (面积: {area}px²) - 大血管或动脉"
+            "脊椎": {
+                "small": f"检测到脊椎局部结构 (面积: {area}px²) - 部分脊椎骨显示",
+                "medium": f"检测到脊椎正常影像 (面积: {area}px²) - 脊椎排列整齐，密度正常",
+                "large": f"检测到脊椎完整结构 (面积: {area}px²) - 脊椎结构清晰，可评估椎体形态"
+            },
+            "气管": {
+                "small": f"检测到气管局部段 (面积: {area}px²) - 气管部分显示",
+                "medium": f"检测到气管正常影像 (面积: {area}px²) - 气管走行正常，管腔通畅",
+                "large": f"检测到气管完整结构 (面积: {area}px²) - 气管及支气管树清晰显示"
             }
         }
         
@@ -986,15 +994,10 @@ class Detection_UI:
         # 统计X光胸片各器官的检测结果
         analysis_stats = {
             "心脏": 0,
-            "肺部": 0,
-            "横膜": 0,
-            "肩胛骨": 0,
-            "胸骨": 0,
-            "肋骨": 0,
-            "胸椎": 0,
-            "胸腔": 0,
-            "纵隔": 0,
-            "锁骨": 0,
+            "左肺": 0,
+            "右肺": 0,
+            "脊椎": 0,
+            "气管": 0,
             "总检测数": len(self.logTable.saved_results)
         }
         
@@ -1010,20 +1013,20 @@ class Detection_UI:
         total_organs = sum([analysis_stats[key] for key in analysis_stats if key != "总检测数"])
         organ_types_found = len([key for key in analysis_stats if analysis_stats[key] > 0 and key != "总检测数"])
         
-        if total_organs >= 8 and organ_types_found >= 5:
+        if total_organs >= 5 and organ_types_found >= 4:
             quality_level = "🟢 优秀X光片质量"
             quality_color = "#2ed573"
             recommendations = [
-                f"检测到{organ_types_found}种胸部器官，图像质量优秀",
+                f"检测到{organ_types_found}/5种胸部主要器官，图像质量优秀",
                 f"总计{total_organs}个器官结构，适合详细分析",
-                "X光片成像清晰，器官边界明显",
+                "X光片成像清晰，心肺脊椎气管结构明显",
                 "建议保存为高质量医学影像样本"
             ]
-        elif total_organs >= 4 and organ_types_found >= 3:
+        elif total_organs >= 3 and organ_types_found >= 3:
             quality_level = "🟡 良好X光片质量"
             quality_color = "#ffa726"
             recommendations = [
-                f"检测到{organ_types_found}种胸部器官",
+                f"检测到{organ_types_found}/5种胸部器官",
                 f"总计{total_organs}个器官结构，基本满足分析要求",
                 "可进行基本胸部器官分析",
                 "适合医学影像教学使用"
@@ -1032,9 +1035,9 @@ class Detection_UI:
             quality_level = "🔴 需要改进"
             quality_color = "#ff4757"
             recommendations = [
-                f"仅检测到{organ_types_found}种胸部器官，图像质量偏低",
+                f"仅检测到{organ_types_found}/5种胸部器官，图像质量偏低",
                 f"总计{total_organs}个器官结构，数量偏少",
-                "建议优化X光拍摄参数",
+                "建议优化X光拍摄参数或调整图像对比度",
                 "考虑重新拍摄或调整成像条件"
             ]
         
@@ -1063,15 +1066,10 @@ class Detection_UI:
                     <h5 style="color: {quality_color}; margin-top: 0;">器官分析质量：{quality_level}</h5>
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 8px; margin-bottom: 10px;">
                         <span><strong>心脏：</strong>{analysis_stats.get('心脏', 0)}</span>
-                        <span><strong>肺部：</strong>{analysis_stats.get('肺部', 0)}</span>
-                        <span><strong>横膜：</strong>{analysis_stats.get('横膜', 0)}</span>
-                        <span><strong>肩胛骨：</strong>{analysis_stats.get('肩胛骨', 0)}</span>
-                        <span><strong>胸骨：</strong>{analysis_stats.get('胸骨', 0)}</span>
-                        <span><strong>肋骨：</strong>{analysis_stats.get('肋骨', 0)}</span>
-                        <span><strong>胸椎：</strong>{analysis_stats.get('胸椎', 0)}</span>
-                        <span><strong>胸腔：</strong>{analysis_stats.get('胸腔', 0)}</span>
-                        <span><strong>纵隔：</strong>{analysis_stats.get('纵隔', 0)}</span>
-                        <span><strong>锁骨：</strong>{analysis_stats.get('锁骨', 0)}</span>
+                        <span><strong>左肺：</strong>{analysis_stats.get('左肺', 0)}</span>
+                        <span><strong>右肺：</strong>{analysis_stats.get('右肺', 0)}</span>
+                        <span><strong>脊椎：</strong>{analysis_stats.get('脊椎', 0)}</span>
+                        <span><strong>气管：</strong>{analysis_stats.get('气管', 0)}</span>
                     </div>
                 </div>
                 """,
@@ -1092,21 +1090,21 @@ class Detection_UI:
                     st.metric("心脏", heart_count, 
                              delta=f"{heart_count/total*100:.1f}%")
                 with col2:
-                    lung_count = analysis_stats.get("肺部", 0)
-                    st.metric("肺部", lung_count,
-                             delta=f"{lung_count/total*100:.1f}%")
+                    left_lung_count = analysis_stats.get("左肺", 0)
+                    st.metric("左肺", left_lung_count,
+                             delta=f"{left_lung_count/total*100:.1f}%")
                 with col3:
-                    rib_count = analysis_stats.get("肋骨", 0)
-                    st.metric("肋骨", rib_count,
-                             delta=f"{rib_count/total*100:.1f}%")
+                    right_lung_count = analysis_stats.get("右肺", 0)
+                    st.metric("右肺", right_lung_count,
+                             delta=f"{right_lung_count/total*100:.1f}%")
                 with col4:
-                    spine_count = analysis_stats.get("胸椎", 0)
-                    st.metric("胸椎", spine_count,
+                    spine_count = analysis_stats.get("脊椎", 0)
+                    st.metric("脊椎", spine_count,
                              delta=f"{spine_count/total*100:.1f}%")
                 with col5:
-                    sternum_count = analysis_stats.get("胸骨", 0)
-                    st.metric("胸骨", sternum_count,
-                             delta=f"{sternum_count/total*100:.1f}%")
+                    trachea_count = analysis_stats.get("气管", 0)
+                    st.metric("气管", trachea_count,
+                             delta=f"{trachea_count/total*100:.1f}%")
 
     def frame_table_process(self, frame, caption):
         # 显示画面并更新结果
