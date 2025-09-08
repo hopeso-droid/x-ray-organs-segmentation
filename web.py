@@ -27,7 +27,7 @@ from hashlib import md5
 
 def load_default_image():
     """
-    加载适合细胞组织分割系统的默认图片
+    加载适合X光胸片器官分割系统的默认图片
     """
     try:
         # 如果都不可用，创建一个自定义的默认图片
@@ -36,21 +36,22 @@ def load_default_image():
         # 创建一个深灰色背景
         img_array = np.ones((height, width, 3), dtype=np.uint8) * 45
         
-        # 添加一个圆形区域模拟显微镜视场
+        # 添加一个矩形区域模拟X光胸片视野
         center_x, center_y = width // 2, height // 2
-        radius = min(width, height) // 3
+        rect_width, rect_height = width // 2, int(height * 0.7)
         
-        # 在圆形区域内创建稍亮的背景
-        y, x = np.ogrid[:height, :width]
-        mask = (x - center_x) ** 2 + (y - center_y) ** 2 <= radius ** 2
-        img_array[mask] = [65, 65, 65]
+        # 在矩形区域内创建稍亮的背景模拟胸腔轮廓
+        x1, y1 = center_x - rect_width // 2, center_y - rect_height // 2
+        x2, y2 = center_x + rect_width // 2, center_y + rect_height // 2
+        img_array[y1:y2, x1:x2] = [65, 65, 65]
         
-        # 添加圆形边界
-        cv2.circle(img_array, (center_x, center_y), radius, (120, 120, 120), 2)
+        # 添加胸腔轮廓
+        cv2.rectangle(img_array, (x1, y1), (x2, y2), (120, 120, 120), 2)
         
-        # 添加十字线
-        cv2.line(img_array, (center_x - 20, center_y), (center_x + 20, center_y), (100, 100, 100), 1)
-        cv2.line(img_array, (center_x, center_y - 20), (center_x, center_y + 20), (100, 100, 100), 1)
+        # 添加肋骨线条模拟
+        for i in range(3):
+            y_pos = y1 + (i + 1) * rect_height // 4
+            cv2.line(img_array, (x1 + 20, y_pos), (x2 - 20, y_pos), (100, 100, 100), 1)
         
         # 添加文字
         font = cv2.FONT_HERSHEY_SIMPLEX
@@ -59,14 +60,14 @@ def load_default_image():
         thickness = 2
         
         # 主标题
-        text1 = "AI Cell Tissue Segmentation"
+        text1 = "AI X-ray Organs Segmentation"
         text_size1 = cv2.getTextSize(text1, font, font_scale, thickness)[0]
         text_x1 = (width - text_size1[0]) // 2
         text_y1 = center_y - 50
         cv2.putText(img_array, text1, (text_x1, text_y1), font, font_scale, color, thickness)
         
         # 副标题
-        text2 = "Waiting for Microscope Image..."
+        text2 = "Waiting for Chest X-ray Image..."
         font_scale2 = 0.6
         text_size2 = cv2.getTextSize(text2, font, font_scale2, thickness)[0]
         text_x2 = (width - text_size2[0]) // 2
@@ -74,7 +75,7 @@ def load_default_image():
         cv2.putText(img_array, text2, (text_x2, text_y2), font, font_scale2, (120, 120, 120), thickness)
         
         # 底部信息
-        text3 = "Upload microscope images for AI analysis"
+        text3 = "Upload chest X-ray images for organ analysis"
         font_scale3 = 0.4
         text_size3 = cv2.getTextSize(text3, font, font_scale3, 1)[0]
         text_x3 = (width - text_size3[0]) // 2
@@ -347,7 +348,7 @@ class Detection_UI:
 
     def __init__(self):
         """
-        初始化细胞检测系统的参数。
+        初始化X光胸片器官分割系统的参数。
         """
         # 初始化类别标签列表和为每个类别随机分配颜色
         self.cls_name = Label_list
@@ -355,7 +356,7 @@ class Detection_UI:
                        range(len(self.cls_name))]
 
         # 设置页面标题
-        self.title = "AI血细胞分析系统 - Blood Cell Analysis System"
+        self.title = "AI X光胸片器官分割系统 - X-ray Organs Segmentation System"
         self.setup_page()  # 初始化页面布局
         def_css_hitml()  # 应用 CSS 样式
 
@@ -450,9 +451,9 @@ class Detection_UI:
                 <div style="color: #e8f5e8; margin-bottom: 10px; font-size: 0.9em; font-weight: bold;">
                     合溪生物科技 | Hexi Biotechnology Co., Ltd.
                 </div>
-                <h1 style="color: white; margin: 0; font-size: 2.5em;">🔬 {self.title}</h1>
+                <h1 style="color: white; margin: 0; font-size: 2.5em;">🩻 {self.title}</h1>
                 <p style="color: #e8f5e8; margin: 10px 0 0 0; font-size: 1.1em;">
-                    基于深度学习的细胞组织智能分割与分析系统
+                    基于深度学习的X光胸片器官智能分割与分析系统
                 </p>
             </div>
             """,
@@ -465,7 +466,7 @@ class Detection_UI:
         """
         设置 Streamlit 侧边栏。
 
-        在侧边栏中配置AI模型参数、分析模式以及显微镜图像输入等选项。
+        在侧边栏中配置AI模型参数、分析模式以及X光胸片图像输入等选项。
         """
         # 添加侧边栏标题
         st.sidebar.markdown("### 🔬 AI 分析参数配置")
@@ -475,7 +476,7 @@ class Detection_UI:
         self.conf_threshold = float(st.sidebar.slider(
             "置信度阈值 (Confidence Threshold)", 
             min_value=0.0, max_value=1.0, value=0.3,
-            help="较低的值会分割更多细胞区域，较高的值只分割明确的细胞结构"
+            help="较低的值会分割更多器官区域，较高的值只分割明确的器官结构"
         ))
         
         # IOU阈值的滑动条
@@ -491,42 +492,42 @@ class Detection_UI:
             "选择分析模式", 
             ["检测任务 (Detection)", "分割任务 (Segmentation)"],
             index=1,  # 默认选择分割任务
-            help="检测模式：标记血细胞位置；分割模式：精确描绘血细胞边界"
+            help="检测模式：标记器官位置；分割模式：精确描绘器官边界"
         )
 
         # 设置侧边栏的摄像头配置部分
         st.sidebar.header("📹 实时分析设置")
         # 选择摄像头的下拉菜单
-        self.selected_camera = st.sidebar.selectbox("显微镜设备选择", self.available_cameras)
+        self.selected_camera = st.sidebar.selectbox("实时拍摄设备选择", self.available_cameras)
 
         # 设置侧边栏的识别项目设置部分
-        st.sidebar.header("🔬 显微镜图像输入")
+        st.sidebar.header("🩻 X光胸片图像输入")
         # 选择文件类型的下拉菜单
-        self.file_type = st.sidebar.selectbox("图像类型", ["细胞切片图像", "组织学视频"])
+        self.file_type = st.sidebar.selectbox("图像类型", ["X光胸片图像", "X光影像视频"])
         # 根据所选的文件类型，提供对应的文件上传器
-        if self.file_type == "细胞切片图像":
+        if self.file_type == "X光胸片图像":
             self.uploaded_file = st.sidebar.file_uploader(
-                "上传显微镜图像", 
-                type=["jpg", "png", "jpeg", "tiff", "tif"],
-                help="支持 JPEG、PNG、TIFF 格式的显微镜图像"
+                "上传X光胸片图像", 
+                type=["jpg", "png", "jpeg", "tiff", "tif", "dcm"],
+                help="支持 JPEG、PNG、TIFF、DICOM 格式的X光胸片图像"
             )
-        elif self.file_type == "组织学视频":
+        elif self.file_type == "X光影像视频":
             self.uploaded_video = st.sidebar.file_uploader(
-                "上传显微镜视频", 
+                "上传X光影像视频", 
                 type=["mp4", "avi", "mov"],
-                help="支持 MP4、AVI、MOV 格式的显微镜视频"
+                help="支持 MP4、AVI、MOV 格式的X光影像视频"
             )
 
         # 提供相关提示信息，根据所选摄像头和文件类型的不同情况
         st.sidebar.markdown("---")
         st.sidebar.markdown("### 📋 操作指南")
         if self.selected_camera == "摄像头检测关闭":
-            if self.file_type == "细胞切片图像":
-                st.sidebar.info("🔬 请上传显微镜图像，然后点击'开始分析'按钮进行AI细胞分割")
-            if self.file_type == "组织学视频":
-                st.sidebar.info("🎥 请上传显微镜视频，然后点击'开始分析'按钮进行批量分析")
+            if self.file_type == "X光胸片图像":
+                st.sidebar.info("🩻 请上传X光胸片图像，然后点击'开始分析'按钮进行AI器官分割")
+            if self.file_type == "X光影像视频":
+                st.sidebar.info("🎥 请上传X光影像视频，然后点击'开始分析'按钮进行批量分析")
         else:
-            st.sidebar.info("📷 请点击'开始实时分析'按钮，启动显微镜实时分析模式")
+            st.sidebar.info("📷 请点击'开始实时分析'按钮，启动实时X光影像分析模式")
 
     def load_model_file(self):
         if self.custom_model_file:
@@ -620,9 +621,9 @@ class Detection_UI:
                         resized_image = cv2.resize(image, (new_width, new_height))
                         resized_frame = cv2.resize(framecopy, (new_width, new_height))
                         if self.display_mode == "智能叠加显示":
-                            self.image_placeholder.image(resized_image, channels="BGR", caption="🎥 实时显微镜图像分析")
+                            self.image_placeholder.image(resized_image, channels="BGR", caption="🎥 实时X光影像分析")
                         else:
-                            self.image_placeholder.image(resized_frame, channels="BGR", caption="📷 原始显微镜图像")
+                            self.image_placeholder.image(resized_frame, channels="BGR", caption="📷 原始X光影像")
                             self.image_placeholder_res.image(resized_image, channels="BGR", caption="🤖 AI分割结果")
 
                         self.logTable.add_frames(image, detInfo, cv2.resize(frame, (640, 640)))
@@ -684,9 +685,9 @@ class Detection_UI:
                 resized_image = cv2.resize(image, (new_width, new_height))
                 resized_frame = cv2.resize(framecopy, (new_width, new_height))
                 if self.display_mode == "智能叠加显示":
-                    self.image_placeholder.image(resized_image, channels="BGR", caption="🔬 显微镜图像AI分析结果")
+                    self.image_placeholder.image(resized_image, channels="BGR", caption="🩻 X光胸片AI分析结果")
                 else:
-                    self.image_placeholder.image(resized_frame, channels="BGR", caption="🔬 原始显微镜图像")
+                    self.image_placeholder.image(resized_frame, channels="BGR", caption="🩻 原始X光胸片图像")
                     self.image_placeholder_res.image(resized_image, channels="BGR", caption="🤖 AI分割标注结果")
 
                 self.logTable.add_frames(image, detInfo, cv2.resize(image_ini, (640, 640)))
@@ -764,9 +765,9 @@ class Detection_UI:
                                 resized_image = cv2.resize(image, (new_width, new_height))
                                 resized_frame = cv2.resize(framecopy, (new_width, new_height))
                                 if self.display_mode == "智能叠加显示":
-                                    self.image_placeholder.image(resized_image, channels="BGR", caption="🎥 显微镜序列图像分析")
+                                    self.image_placeholder.image(resized_image, channels="BGR", caption="🎥 X光影像序列分析")
                                 else:
-                                    self.image_placeholder.image(resized_frame, channels="BGR", caption="📷 原始显微镜序列图像")
+                                    self.image_placeholder.image(resized_frame, channels="BGR", caption="📷 原始X光影像序列")
                                     self.image_placeholder_res.image(resized_image, channels="BGR", caption="🤖 AI分割标注序列")
 
                                 self.logTable.add_frames(image, detInfo, cv2.resize(frame, (640, 640)))
@@ -858,10 +859,10 @@ class Detection_UI:
 
             # 根据显示模式显示处理后的图像或原始图像
             if self.display_mode == "智能叠加显示":
-                self.image_placeholder.image(resized_image, channels="BGR", caption="🔍 AI细胞分析结果")
+                self.image_placeholder.image(resized_image, channels="BGR", caption="🔍 AI器官分割结果")
             else:
-                self.image_placeholder.image(resized_frame, channels="BGR", caption="🔬 原始显微镜图像")
-                self.image_placeholder_res.image(resized_image, channels="BGR", caption="🤖 AI细胞分析结果")
+                self.image_placeholder.image(resized_frame, channels="BGR", caption="🩻 原始X光胸片图像")
+                self.image_placeholder_res.image(resized_image, channels="BGR", caption="🤖 AI器官分割结果")
 
     def frame_process(self, image, file_name,video_time = None):
         """
@@ -937,18 +938,18 @@ class Detection_UI:
 
     def get_biological_description(self, class_name, area):
         """
-        根据检测类别和细胞面积生成专业的生物学描述
+        根据检测类别和器官面积生成专业的医学影像学描述
         """
         descriptions = {
-            "细胞核": {
-                "small": f"检测到小细胞核 (面积: {area}px²) - 细胞分裂期或幼稚细胞",
-                "medium": f"检测到正常细胞核 (面积: {area}px²) - 成熟细胞核形态",
-                "large": f"检测到大细胞核 (面积: {area}px²) - 可能为活跃增殖细胞"
+            "心脏": {
+                "small": f"检测到小心脏影像 (面积: {area}px²) - 可能为儿童或部分心脏显示",
+                "medium": f"检测到正常心脏影像 (面积: {area}px²) - 正常成人心脏大小",
+                "large": f"检测到大心脏影像 (面积: {area}px²) - 可能存在心脏扩大"
             },
-            "细胞质": {
-                "small": f"检测到少量细胞质 (面积: {area}px²) - 高核质比细胞",
-                "medium": f"检测到适量细胞质 (面积: {area}px²) - 正常核质比例",
-                "large": f"检测到丰富细胞质 (面积: {area}px²) - 分泌活跃或成熟细胞"
+            "肺部": {
+                "small": f"检测到小肺部区域 (面积: {area}px²) - 局部肺部组织",
+                "medium": f"检测到正常肺部区域 (面积: {area}px²) - 正常肺部组织结构",
+                "large": f"检测到大肺部区域 (面积: {area}px²) - 可能存在肺部扩张或病变"
             },
             "组织结构": {
                 "small": f"检测到局部组织结构 (面积: {area}px²) - 组织局部特征",
@@ -978,12 +979,12 @@ class Detection_UI:
 
     def generate_analysis_assessment_content(self):
         """
-        生成血细胞分析评估汇总内容
+        生成X光胸片器官分析评估汇总内容
         """
         if not hasattr(self, 'logTable') or len(self.logTable.saved_results) == 0:
-            return "📊 暂无血细胞分析数据", "", [], {}
+            return "📊 暂无X光胸片分析数据", "", [], {}
         
-        # 统计血细胞各类型的检测结果
+        # 统计X光胸片各器官的检测结果
         analysis_stats = {
             "嗜碱性粒细胞": 0,
             "嗜酸性粒细胞": 0,
@@ -1125,14 +1126,14 @@ class Detection_UI:
         cv2.waitKey(1)
 
     def setupMainWindow(self):
-        """ 运行细胞组织分割系统。 """
+        """ 运行X光胸片器官分割系统。 """
         # 专业化的分隔线和系统信息
         st.markdown(
             """
             <div style="text-align: center; color: #666; margin: 20px 0;">
                 <hr style="border: 1px solid #e0e0e0;">
                 <p style="margin: 10px 0; font-size: 0.9em;">
-                    🩸 AI-Powered Blood Cell Analysis Platform | 基于人工智能的血细胞分析平台
+                    🩻 AI-Powered X-ray Organs Segmentation Platform | 基于人工智能的X光胸片器官分割平台
                 </p>
                 <hr style="border: 1px solid #e0e0e0;">
             </div>
@@ -1140,12 +1141,12 @@ class Detection_UI:
             unsafe_allow_html=True
         )
 
-        # 创建列布局，优化细胞分析界面
+        # 创建列布局，优化器官分割界面
         col1, col2, col3 = st.columns([4, 1, 2])
 
         # 在第一列设置显示模式的选择
         with col1:
-            st.markdown("### 🔬 图像显示模式")
+            st.markdown("### 🩻 图像显示模式")
             self.display_mode = st.radio(
                 "选择显示方式", 
                 ["智能叠加显示", "对比分析显示"],
@@ -1156,14 +1157,14 @@ class Detection_UI:
             if self.display_mode == "智能叠加显示":
                 self.image_placeholder = st.empty()
                 if not self.logTable.saved_images_ini:
-                    self.image_placeholder.image(load_default_image(), caption="🔬 等待显微镜图像输入...")
+                    self.image_placeholder.image(load_default_image(), caption="🩻 等待X光胸片图像输入...")
             else:
                 # "对比分析显示"
                 st.markdown("**原始图像 vs AI分割结果**")
                 self.image_placeholder = st.empty()
                 self.image_placeholder_res = st.empty()
                 if not self.logTable.saved_images_ini:
-                    self.image_placeholder.image(load_default_image(), caption="🔬 原始显微镜图像")
+                    self.image_placeholder.image(load_default_image(), caption="🩻 原始X光胸片图像")
                     self.image_placeholder_res.image(load_default_image(), caption="🤖 AI分割结果")
             
             # 显示用的进度条
@@ -1175,7 +1176,7 @@ class Detection_UI:
 
         # 在最右侧列设置分析结果显示
         with col3:
-            st.markdown("### 🔬 AI分析报告")
+            st.markdown("### 🩻 AI分析报告")
             self.table_placeholder = st.empty()  # 调整到最右侧显示
             self.table_placeholder.table(res)
 
@@ -1208,10 +1209,10 @@ class Detection_UI:
             )
             
             # 使用HTML和CSS创建更大的按钮
-            st.markdown("**🩸 血细胞分析**")
+            st.markdown("**🩻 X光胸片器官分析**")
             analysis_button = st.button(
-                "🔬 开始AI血细胞分析", 
-                help="上传血涂片图像，启动AI血细胞识别与分析", 
+                "🩻 开始AI器官分割分析", 
+                help="上传X光胸片图像，启动AI器官识别与分割", 
                 type="primary",
                 use_container_width=True
             )
@@ -1247,9 +1248,9 @@ class Detection_UI:
             if not st.session_state.get('analysis_running', False):
                 if not self.logTable.saved_images_ini:
                     if self.display_mode == "智能叠加显示":
-                        self.image_placeholder.image(load_default_image(), caption="🔬 等待显微镜图像输入...")
+                        self.image_placeholder.image(load_default_image(), caption="🩻 等待X光胸片图像输入...")
                     else:  # 对比分析显示
-                        self.image_placeholder.image(load_default_image(), caption="🔬 原始显微镜图像")
+                        self.image_placeholder.image(load_default_image(), caption="🩻 原始X光胸片图像")
                         self.image_placeholder_res.image(load_default_image(), caption="🤖 AI分割结果")
 
         # 系统使用说明和分析说明（页面底部）
@@ -1267,7 +1268,7 @@ class Detection_UI:
                         <li>本系统仅供生物医学研究和教学使用</li>
                         <li>仅为辅助用于临床诊断或医疗决策</li>
                         <li>分析结果需要专业研究人员验证</li>
-                        <li>血细胞分析结果仅供科研参考</li>
+                        <li>X光胸片器官分割结果仅供科研参考</li>
                         <li>使用前请确保数据合规性</li>
                     </ul>
                 </div>
@@ -1279,12 +1280,12 @@ class Detection_UI:
             st.markdown(
                 """
                 <div style="background-color: #e8f5e8; border: 1px solid #66bb6a; border-radius: 5px; padding: 15px; margin-bottom: 15px;">
-                    <h4 style="color: #2e7d32; margin-top: 0;">🩸 血细胞分析说明</h4>
+                    <h4 style="color: #2e7d32; margin-top: 0;">🩻 X光胸片器官分析说明</h4>
                     <ul style="margin-bottom: 0; color: #2e7d32;">
-                        <li><strong>分析类型：</strong>血细胞智能识别与分类</li>
-                        <li><strong>支持格式：</strong>JPG, PNG, JPEG, TIFF</li>
-                        <li><strong>最佳图像：</strong>高分辨率血涂片显微镜图像</li>
-                        <li><strong>分析指标：</strong>细胞名称、细胞面积、细胞周长、细胞圆度、细胞色彩值</li>
+                        <li><strong>分析类型：</strong>X光胸片器官智能识别与分割</li>
+                        <li><strong>支持格式：</strong>JPG, PNG, JPEG, TIFF, DICOM</li>
+                        <li><strong>最佳图像：</strong>高分辨率胸部X光片图像</li>
+                        <li><strong>分析指标：</strong>器官名称、器官面积、器官边界、器官形态、器官密度值</li>
                         <li><strong>置信度：</strong>建议设置0.3-0.7之间</li>
                     </ul>
                 </div>
