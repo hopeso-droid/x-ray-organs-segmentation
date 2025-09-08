@@ -221,8 +221,8 @@ def adjust_parameter(image_size, base_size=1000):
 def draw_detections(image, info, alpha=0.2):
     name, bbox, conf, cls_id, mask = info['class_name'], info['bbox'], info['score'], info['class_id'], info['mask']
     
-    # 如果是英文名称，转换为中文显示；如果已经是中文，直接使用
-    display_name = English_to_Chinese.get(name, name)
+    # 在图像上显示英文标签（避免中文显示问题），如果是中文名称则转换为英文
+    display_name = Chinese_to_English.get(name, name)
     
     adjust_param = adjust_parameter(image.shape[:2])
     spacing = int(20 * adjust_param)
@@ -232,7 +232,7 @@ def draw_detections(image, info, alpha=0.2):
         aim_frame_area = (x2 - x1) * (y2 - y1)
         cv2.rectangle(image, (x1, y1), (x2, y2), color=(0, 0, 255), thickness=int(5 * adjust_param))
         
-        # 使用中文标签和改进的文字绘制
+        # 使用英文标签和改进的文字绘制（避免中文显示问题）
         label_text = f"{display_name} {conf:.2f}"
         
         # 绘制黑色背景
@@ -267,7 +267,7 @@ def draw_detections(image, info, alpha=0.2):
             colors = np.mean([image[y, x] for x, y in selected_points[:, 0]], axis=0)
             color_str = f"({colors[0]:.1f}, {colors[1]:.1f}, {colors[2]:.1f})"
 
-            # 绘制类别名称（中文，改进显示）
+            # 绘制类别名称（英文，避免中文显示问题）
             x, y = np.min(mask_points, axis=0).astype(int)
             label_text = f"{display_name} {conf:.2f}"
             
