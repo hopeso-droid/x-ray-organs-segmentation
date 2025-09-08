@@ -1138,6 +1138,48 @@ class Detection_UI:
             unsafe_allow_html=True
         )
 
+        # 添加自定义CSS来移除radio按钮的蓝色边框
+        st.markdown("""
+        <style>
+        /* 移除radio按钮的蓝色边框和选中状态样式 */
+        .stRadio > div {
+            border: none !important;
+        }
+        
+        .stRadio > div > label > div:first-child {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        
+        .stRadio > div > label > div:first-child > div {
+            border: none !important;
+            box-shadow: none !important;
+        }
+        
+        /* 自定义radio按钮样式 */
+        .stRadio > div > label {
+            background-color: transparent !important;
+            border: 1px solid #e6e6e6 !important;
+            border-radius: 5px !important;
+            padding: 8px 12px !important;
+            margin: 2px 0 !important;
+            transition: all 0.2s ease !important;
+        }
+        
+        .stRadio > div > label:hover {
+            background-color: #f0f0f0 !important;
+            border-color: #cccccc !important;
+        }
+        
+        /* 选中状态样式 */
+        .stRadio > div > label[data-checked="true"] {
+            background-color: #e8f5e8 !important;
+            border-color: #66bb6a !important;
+            color: #2e7d32 !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
         # 创建列布局，优化器官分割界面
         col1, col2, col3 = st.columns([4, 1, 2])
 
